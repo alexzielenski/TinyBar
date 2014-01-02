@@ -16,9 +16,17 @@
 	UIView *textView = MSHookIvar<UIView *>(self, "_textView");
 	UIView *imageView = MSHookIvar<UIView *>(self, "_iconImageView");
 	UIView *grabberView = MSHookIvar<UIView *>(self, "_grabberView");
+	UIImageView *attachment = MSHookIvar<UIImageView *>(self, "_attachmentImageView");
 
 	// Hide the grabber
 	[grabberView setAlpha: 0.0];
+	
+	// Get rid of the attachment
+	if (attachment) {
+		[attachment removeFromSuperview];
+		// [attachment release];
+		// attachment = nil;
+	}
 
 	CGRect bounds = [(UIView *)self bounds];
 
@@ -59,6 +67,7 @@
 
 @interface NSObject ()
 @property (assign,nonatomic) UIEdgeInsets clippingInsets;
+-(BOOL)containsAttachments;
 @end
 
 %hook SBBannerContextView
@@ -109,6 +118,15 @@ const char *TEXTLABELDATE;
 	// get our strings from ivars
 	NSAttributedString *primaryString = MSHookIvar<NSAttributedString *>(self, "_primaryTextAttributedStringComponent");
 	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
+	UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
+
+	if ([secondaryString containsAttachments] || [primaryString containsAttachments]) {
+		TLog(@"primary: %@", primaryString);
+		TLog(@"secondary: %@", secondaryString);
+		TLog(@"image: %@", image);
+
+		TLog(@"ATTACHMENTS!");
+	}
 
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
@@ -134,18 +152,27 @@ const char *TEXTLABELDATE;
 	// overriding so it does nothing
 }
 
--(void)setPrimaryText:(NSString *)arg1 {
+- (void)setPrimaryText:(NSString *)arg1 {
 	// Add a colon to the title
 	if (![arg1 hasSuffix: @":"])
 		arg1 = [arg1 stringByAppendingString:@":"];
 	%orig(arg1);
 }
 
--(void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2 {
+- (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2 {
 	// Add two spaces to the end of the secondary text to space out the marquee
 	if (![arg1 hasSuffix: @"  "])
 		arg1 = [arg1 stringByAppendingString:@"  "];
 	%orig(arg1, arg2);
+}
+
+- (void)setRelevanceDateText:(id)arg1 {
+	// Clear the relevance string ("now")
+	%orig(@"");
+}
+
+-(void)setPrimaryTextAccessoryImage:(id)arg1 {
+	%orig(nil);
 }
 
 %end
