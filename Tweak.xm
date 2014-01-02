@@ -68,6 +68,8 @@
 @interface NSObject ()
 @property (assign,nonatomic) UIEdgeInsets clippingInsets;
 -(BOOL)containsAttachments;
+- (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
+-(int)_ui_resolvedTextAlignment;
 @end
 
 %hook SBBannerContextView
@@ -118,15 +120,9 @@ const char *TEXTLABELDATE;
 	// get our strings from ivars
 	NSAttributedString *primaryString = MSHookIvar<NSAttributedString *>(self, "_primaryTextAttributedStringComponent");
 	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
-	UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
+	// UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
 
-	if ([secondaryString containsAttachments] || [primaryString containsAttachments]) {
-		TLog(@"primary: %@", primaryString);
-		TLog(@"secondary: %@", secondaryString);
-		TLog(@"image: %@", image);
-
-		TLog(@"ATTACHMENTS!");
-	}
+	BOOL rtl = [secondaryString _ui_resolvedTextAlignment] == NSTextAlignmentRight || [primaryString _ui_resolvedTextAlignment] == NSTextAlignmentRight;
 
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
@@ -134,6 +130,11 @@ const char *TEXTLABELDATE;
 
 	// vertically center the title
 	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
+
+	if (rtl) {
+		primaryRect.origin.x = bounds.size.width + bounds.origin.x - primaryRect.size.width;
+	}
+
 	[primary setAttributedText: primaryString];
 	[primary setFrame: primaryRect];
 	[self addSubview: primary];
@@ -143,6 +144,14 @@ const char *TEXTLABELDATE;
 	secondaryRect.origin.x   += primaryRect.size.width + PADDING;
 	secondaryRect.size.width  = bounds.size.width - secondaryRect.origin.x;
 
+	if (rtl) {
+		[secondary setMarqueeType: MLContinuousReverse];
+		secondaryRect.origin.x = 0;
+	} else {
+		[secondary setMarqueeType: MLContinuous];
+	}
+
+	[secondary setTextAlignment: [secondaryString _ui_resolvedTextAlignment]];
 	[secondary setFrame: secondaryRect];
 	[secondary setAttributedText: secondaryString];
 	[self addSubview: secondary];
