@@ -33,10 +33,10 @@
 	// Place the content view PADDING distance away from the image view
 	// and make it fill the rest of the view
 	CGRect textFrame = textView.frame;
-	textFrame.size.height = self.bounds.size.height;
+	textFrame.size.height = bounds.size.height;
 	textFrame.origin.x = imageFrame.origin.x + imageFrame.size.width + PADDING;
 	textFrame.origin.y = 0;
-	textFrame.size.width = self.bounds.size.width - textFrame.origin.x;
+	textFrame.size.width = bounds.size.width - textFrame.origin.x;
 	[textView setFrame: textFrame];
 }
 
@@ -57,14 +57,14 @@
 
 %end
 
+@interface NSObject ()
+@property (assign,nonatomic) UIEdgeInsets clippingInsets;
+@end
+
 %hook SBBannerContextView
 
 -(void)setClippingInsets:(UIEdgeInsets)arg1 {
-	// Replace default padding with our own just on the left and right sides
-	UIEdgeInsets insets = UIEdgeInsetsZero;
-	insets.left  = PADDING;
-	insets.right = PADDING;
-	%orig(insets);
+	%orig(UIEdgeInsetsZero);
 }
 
 -(CGRect)_contentFrame {
@@ -74,7 +74,7 @@
 	if (o.size.width == 0 || o.size.height == 0)
 		return o;
 
-	return [(UIView *)self bounds];
+	return CGRectInset([(UIView *)self bounds], PADDING, 0);
 }
 
 %end
