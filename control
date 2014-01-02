@@ -1,0 +1,11 @@
+Package: com.alexzielenski.tinybar
+Name: TinyBar
+Depends: firmware (>= 7.0), mobilesubstrate
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Thins notification banners down to size!
+Maintainer: Alex Zielenski
+Author: Alex Zielenski <http://www.alexzielenski.com>
+Homepage: http://www.alexzielenski.com
+Section: Tweaks
+Sponsor: Alex Zielenski <support@alexzielenski.com>
