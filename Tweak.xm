@@ -97,6 +97,17 @@ const char *TEXTLABELDATE;
 - (void)layoutSubviews {
 	%orig;
 
+
+	// Remove date label on iOS7.1
+	Ivar labelVar = class_getInstanceVariable([self class], "_relevanceDateLabel");
+	if (labelVar != NULL) {
+		UILabel *dateLabel = object_getIvar(self, labelVar);
+		if (dateLabel && [dateLabel isKindOfClass: %c(UILabel)]) {
+			[dateLabel setAlpha: 0.0];
+			[dateLabel removeFromSuperview];
+		}
+	}
+
 	CGRect bounds = [(UIView *)self bounds];
 
 	// Create and cache a primary text label
@@ -141,7 +152,7 @@ const char *TEXTLABELDATE;
 
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
-	secondaryRect.origin.x   += primaryRect.size.width + PADDING;
+	secondaryRect.origin.x   += primaryRect.size.width;
 	secondaryRect.size.width  = bounds.size.width - secondaryRect.origin.x;
 
 	if (rtl) {
@@ -178,6 +189,10 @@ const char *TEXTLABELDATE;
 - (void)setRelevanceDateText:(id)arg1 {
 	// Clear the relevance string ("now")
 	%orig(@"");
+}
+
+-(void)setRelevanceDate:(id)date {
+	%orig(nil);
 }
 
 -(void)setPrimaryTextAccessoryImage:(id)arg1 {
