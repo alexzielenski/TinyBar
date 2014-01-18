@@ -143,7 +143,7 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  */
 
 @property (nonatomic, assign) BOOL holdScrolling;
-
+@property (nonatomic, assign) CGFloat rate;
 
 /** Defines the direction and method in which the `MarqueeLabel` instance scrolls.
  

@@ -1,6 +1,7 @@
 Package: com.alexzielenski.tinybar
 Name: TinyBar
-Depends: firmware (>= 7.0), mobilesubstrate
+Priority: optional
+Depends: firmware (>= 7.0.2), mobilesubstrate, preferenceloader
 Version: 0.0.1
 Architecture: iphoneos-arm
 Description: Thins notification banners down to size!

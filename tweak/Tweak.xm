@@ -5,34 +5,42 @@
 
 #define TLog(format, ...) NSLog(@"TinyBar: %@", [NSString stringWithFormat: format, ## __VA_ARGS__])
 #define PADDING   4.0
-#define SBHEIGHT  20.0
+#define SBHEIGHT round([preferences objectForKey: @"height"] ? [[preferences objectForKey: @"height"] doubleValue] : 20.0)
 #define IMAGESIZE 14.0
+#define DURATION  [preferences objectForKey: @"duration"] ? [[preferences objectForKey: @"duration"] doubleValue] : 6.375
+#define SCROLL_SPEED [preferences objectForKey: @"speed"] ? [[preferences objectForKey: @"speed"] doubleValue] : 85.0
+#define ENABLED [[preferences objectForKey: @"enabled"] boolValue]
+
+static NSDictionary *preferences = nil;
 
 %hook SBDefaultBannerView
 
 -(void)layoutSubviews {
 	%orig;
 
+	UIImageView *attachment = MSHookIvar<UIImageView *>(self, "_attachmentImageView");
 	UIView *textView = MSHookIvar<UIView *>(self, "_textView");
 	UIView *imageView = MSHookIvar<UIView *>(self, "_iconImageView");
 	UIView *grabberView = MSHookIvar<UIView *>(self, "_grabberView");
-	UIImageView *attachment = MSHookIvar<UIImageView *>(self, "_attachmentImageView");
 
-	// Hide the grabber
-	[grabberView setAlpha: 0.0];
-	
-	// Get rid of the attachment
-	if (attachment) {
-		[attachment removeFromSuperview];
-		// [attachment release];
-		// attachment = nil;
+	if (!ENABLED) {
+		attachment.alpha = 1.0;
+		grabberView.alpha = 1.0;
+		return;
 	}
 
+	// Hide the grabber
+	grabberView.alpha = 0.0;
+	
+	// Get rid of the attachment
+	attachment.alpha = 0.0;
+
 	CGRect bounds = [(UIView *)self bounds];
+	CGFloat height = SBHEIGHT;
 
 	// Make the image our size and vertically center it
 	CGRect imageFrame = CGRectZero;
-	imageFrame.origin.y = floor(SBHEIGHT / 2 - IMAGESIZE / 2);
+	imageFrame.origin.y = floor(height / 2 - IMAGESIZE / 2);
 	imageFrame.origin.x = 0;
 	imageFrame.size.height = IMAGESIZE;
 	imageFrame.size.width = IMAGESIZE;
@@ -54,6 +62,8 @@
 
 -(CGRect)_bannerFrameForOrientation:(int)arg1 {
 	CGRect o = %orig;
+	if (!ENABLED)
+		return o;
 
 	if (o.size.width == 0 || o.size.height == 0)
 		return o;
@@ -75,13 +85,19 @@
 %hook SBBannerContextView
 
 -(void)setClippingInsets:(UIEdgeInsets)arg1 {
-	%orig(UIEdgeInsetsZero);
+	if (ENABLED)
+		%orig(UIEdgeInsetsZero);
+	else
+		%orig;
 }
 
 -(CGRect)_contentFrame {
 	// For iPad: make the notification banners the entire width of the screen
 	// rather than having them be tiny
 	CGRect o = %orig;
+	if (!ENABLED)
+		return o;
+
 	if (o.size.width == 0 || o.size.height == 0)
 		return o;
 
@@ -97,17 +113,20 @@ const char *TEXTLABELDATE;
 - (void)layoutSubviews {
 	%orig;
 
-
 	// Remove date label on iOS7.1
 	Ivar labelVar = class_getInstanceVariable([self class], "_relevanceDateLabel");
 	if (labelVar != NULL) {
 		UILabel *dateLabel = object_getIvar(self, labelVar);
 		if (dateLabel && [dateLabel isKindOfClass: %c(UILabel)]) {
-			[dateLabel setAlpha: 0.0];
-			[dateLabel removeFromSuperview];
+			
+			if (!ENABLED)
+				[dateLabel setAlpha: 1.0];
+			else
+				[dateLabel setAlpha: 0.0];
+
+			// [dateLabel removeFromSuperview];
 		}
 	}
-
 	CGRect bounds = [(UIView *)self bounds];
 
 	// Create and cache a primary text label
@@ -121,11 +140,18 @@ const char *TEXTLABELDATE;
 	MarqueeLabel *secondary = objc_getAssociatedObject(self, &TEXTLABELSECONDARY);
 
 	if (!secondary) {
-		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:85.0 andFadeLength:PADDING] autorelease];
+		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
 		[secondary setAnimationDelay: 0.2];
 		// loop scrolling
 		[secondary setMarqueeType: MLContinuous];
 		objc_setAssociatedObject(self, &TEXTLABELSECONDARY, secondary, OBJC_ASSOCIATION_RETAIN);
+	}
+	secondary.rate = SCROLL_SPEED;
+
+	if (!ENABLED) {
+		[primary removeFromSuperview];
+		[secondary removeFromSuperview];
+		return;
 	}
 
 	// get our strings from ivars
@@ -170,37 +196,56 @@ const char *TEXTLABELDATE;
 
 - (void)drawRect:(CGRect)arg1 {
 	// overriding so it does nothing
-}
-
-- (void)setPrimaryText:(NSString *)arg1 {
-	// Add a colon to the title
-	if (![arg1 hasSuffix: @":"])
-		arg1 = [arg1 stringByAppendingString:@":"];
-	%orig(arg1);
+	if (!ENABLED)
+		%orig(arg1);
 }
 
 - (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2 {
 	// Add two spaces to the end of the secondary text to space out the marquee
-	if (![arg1 hasSuffix: @"  "])
+	if (![arg1 hasSuffix: @"   "] && ENABLED)
 		arg1 = [arg1 stringByAppendingString:@"  "];
 	%orig(arg1, arg2);
 }
 
-- (void)setRelevanceDateText:(id)arg1 {
-	// Clear the relevance string ("now")
-	%orig(@"");
-}
+%end
 
--(void)setRelevanceDate:(id)date {
-	%orig(nil);
-}
+%hook SBBannerController
 
--(void)setPrimaryTextAccessoryImage:(id)arg1 {
-	%orig(nil);
+- (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
+	if (sel_isEqual(aSelector, @selector(_dismissIntervalElapsed)) && ENABLED) {
+		%orig(aSelector, anArgument, DURATION, modes);
+	} else {
+		%orig;
+	}
 }
 
 %end
 
+#define PREFS_PATH [NSString stringWithFormat:@"%@/Library/Preferences/com.alexzielenski.tinybar.plist", NSHomeDirectory()]
+
+static inline void prefsChanged(CFNotificationCenterRef center,
+									void *observer,
+									CFStringRef name,
+									const void *object,
+									CFDictionaryRef userInfo) {
+
+	TLog(@"Preferences changed!");
+	if (preferences) {
+		[preferences release];
+		preferences = nil;
+	}
+
+	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
+}
+
 %ctor {
 	TLog(@"Initialized");
+
+	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
+	if (!preferences) {
+		preferences = [NSDictionary dictionaryWithObjectsAndKeys: @6.375, @"duration", @85.0, @"speed", @20.0, @"height", @YES, @"enabled", nil];
+	}
+
+	CFNotificationCenterRef center = CFNotificationCenterGetDarwinNotifyCenter();
+	CFNotificationCenterAddObserver(center, NULL, &prefsChanged, (CFStringRef)@"com.alexzielenski.tinybar/prefsChanged", NULL, 0);
 }
