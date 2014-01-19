@@ -255,6 +255,13 @@ static NSDictionary *preferences = nil;
 		%orig(arg1);
 }
 
+-(void)setSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2 {
+	if (ENABLED)
+		%orig([arg1 stringByReplacingOccurrencesOfString: @"\n" withString: @" "], arg2);
+	else
+		%orig;
+}
+
 %new
 - (UILabel *)tb_titleLabel {
 	return objc_getAssociatedObject(self, @selector(tb_titleLabel));
