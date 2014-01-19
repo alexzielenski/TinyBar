@@ -13,7 +13,7 @@
 #define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
 #define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
 #define SHOWICON ([preferences objectForKey: PREFS_SHOWICON_KEY] ? [[preferences objectForKey: PREFS_SHOWICON_KEY] boolValue] : DEFAULT_SHOWICON)
-#define DURATION_LONG [preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG
+#define DURATION_LONG (float)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
 #define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
 
 static NSDictionary *preferences = nil;
@@ -102,6 +102,7 @@ static NSDictionary *preferences = nil;
 @end
 
 %hook SBBannerContextView
+
 - (void)setClippingInsets:(UIEdgeInsets)arg1 {
 	if (ENABLED)
 		%orig(UIEdgeInsetsZero);
@@ -120,22 +121,6 @@ static NSDictionary *preferences = nil;
 		return o;
 
 	return CGRectInset([(UIView *)self bounds], PADDING, 0);
-}
-
-%new
-- (void)tb_dismissAfterDuration:(BOOL)useLong {
-	// -layoutSubviews sometimes gets called twice so prevent this method from executing twice
-	if (objc_getAssociatedObject(self, @selector(tb_didDismiss))) {
-		return;
-	}
-
-	objc_setAssociatedObject(self, @selector(tb_didDismiss), @YES, OBJC_ASSOCIATION_RETAIN);
-	NSArray *modes = @[NSRunLoopCommonModes];
-	CGFloat duration = useLong ? DURATION_LONG : DURATION;
-
-	id bannerController = [%c(SBBannerController) sharedInstance];
-	[bannerController performSelector: @selector(_dismissIntervalElapsed) withObject: self afterDelay: duration inModes: modes];
-	[bannerController performSelector: @selector(_replaceIntervalElapsed) withObject: self afterDelay: duration - (floor(duration / DEFAULT_DURATION) * 4) inModes: modes];
 }
 
 %end
@@ -195,6 +180,7 @@ static NSDictionary *preferences = nil;
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
 	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
+	// CGFloat textLength = secondaryRect.size.width;
 
 	// vertically center the title
 	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
@@ -213,16 +199,11 @@ static NSDictionary *preferences = nil;
 		[self addSubview: primary];
 	}
 
-	CGFloat textLength = secondaryRect.size.width;
 
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width;
 	secondaryRect.size.width  = bounds.size.width - secondaryRect.origin.x;
-
-	// Needed to have the view control when the banner is dismissed whether it needs to scroll or not
-	UIView *bannerView = MSHookIvar<UIView *>([%c(SBBannerController) sharedInstance], "_bannerView");
-	[bannerView tb_dismissAfterDuration: textLength > secondaryRect.size.width];
 
 	if (rtl) {
 		[secondary setMarqueeType: MLContinuousReverse];
@@ -235,6 +216,27 @@ static NSDictionary *preferences = nil;
 	[secondary setFrame: secondaryRect];
 	[secondary setAttributedText: secondaryString];
 	[self addSubview: secondary];
+
+	// Make the banner persist at least as long as the user says or enough for one scroll around
+	CGFloat animationDuration = [secondary animationDuration] + 1.0;
+	CGFloat replaceDuration = (DURATION_LONG / DEFAULT_DURATION) * 4.0;
+	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
+
+	if (animationDuration > replaceDuration) {
+		replaceDuration = animationDuration;
+
+		if (animationDuration > DURATION_LONG) {
+			dismissDuration = animationDuration;
+		}
+	}
+
+	id ctrl = [%c(SBBannerController) ?: %c(SBBulletinBannerController) sharedInstance];
+	NSArray *modes = @[NSRunLoopCommonModes];
+	
+	[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_replaceIntervalElapsed) object:nil];
+	[ctrl performSelector:@selector(_replaceIntervalElapsed) withObject:nil afterDelay:replaceDuration inModes:modes];
+	[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_dismissIntervalElapsed) object:nil];
+	[ctrl performSelector:@selector(_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
 }
 
 - (void)drawRect:(CGRect)arg1 {
@@ -276,20 +278,6 @@ static NSDictionary *preferences = nil;
 	[self tb_setTitleLabel: nil];
 	[self tb_setSecondaryLabel: nil];
 	%orig;
-}
-
-%end
-
-%hook SBBannerController
-
-- (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
-	if ((sel_isEqual(aSelector, @selector(_dismissIntervalElapsed)) || sel_isEqual(aSelector, @selector(_replaceIntervalElapsed))) && ENABLED && ![anArgument isKindOfClass: %c(SBBannerContextView)]) {
-		// do absolutely nothing, the view will dismiss itself
-
-		// %orig(aSelector, anArgument, DURATION, modes);
-	} else {
-		%orig;
-	}
 }
 
 %end

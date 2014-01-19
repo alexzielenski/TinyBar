@@ -37,6 +37,7 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  */
 
 @interface MarqueeLabel : UILabel
+@property (nonatomic, readonly) NSTimeInterval animationDuration;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name Creating MarqueeLabels
@@ -362,6 +363,7 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  */
 
 + (void)controllerLabelsShouldAnimate:(UIViewController *)controller;
+
 
 
 @end
