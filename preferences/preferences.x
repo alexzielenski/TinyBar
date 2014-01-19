@@ -4,7 +4,6 @@
 @interface TinyBarListController: PSListController
 @end
 
-
 @implementation TinyBarListController
 
 - (id)specifiers {
@@ -21,13 +20,6 @@
 }
 
 - (void)testBulletin:(id)sender {
-	// SBBannerController *ctrl = [%c(SBBannerController) sharedInstance];
-	// SBBulletinBannerController *bulletin = [%c(SBBulletinBannerController) sharedInstance];
-
-
-	// [ctrl _presentBannerForContext: reason: 1];
-
-	// [[%c(SBBulletinBannerController) sharedInstance] _showTestBanner: @"1"];
 
 }
 

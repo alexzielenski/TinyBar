@@ -9,7 +9,7 @@
 
 #define SBHEIGHT round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: PREFS_HEIGHT_KEY] doubleValue] : DEFAULT_HEIGHT)
 #define DURATION  [preferences objectForKey: PREFS_DURATION_KEY] ? [[preferences objectForKey: PREFS_DURATION_KEY] doubleValue] : DEFAULT_DURATION
-#define SCROLL_SPEED [preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: PREFS_SPEED_KEY] doubleValue] : DEFAULT_SPEED
+#define SCROLL_SPEED (CGFloat)([preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: PREFS_SPEED_KEY] doubleValue] : DEFAULT_SPEED)
 #define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
 #define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
 #define SHOWICON ([preferences objectForKey: PREFS_SHOWICON_KEY] ? [[preferences objectForKey: PREFS_SHOWICON_KEY] boolValue] : DEFAULT_SHOWICON)
@@ -89,11 +89,18 @@ static NSDictionary *preferences = nil;
 
 @interface NSObject ()
 @property (assign,nonatomic) UIEdgeInsets clippingInsets;
--(BOOL)containsAttachments;
+@property (copy, nonatomic) NSString *message;
+@property (copy, nonatomic) NSString *subtitle;
+@property (copy, nonatomic) NSString *title;
+@property (copy, nonatomic) NSString *sectionID;
+@property (copy, nonatomic) id defaultAction;
++ (id)action;
++ (id)sharedInstance;
+- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
+
+- (BOOL)containsAttachments;
 - (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
 - (int)_ui_resolvedTextAlignment;
-- (void)tb_dismissAfterDuration:(BOOL)useLong;
-+ (id)sharedInstance;
 
 - (UILabel *)tb_titleLabel;
 - (MarqueeLabel *)tb_secondaryLabel;
@@ -159,6 +166,8 @@ static NSDictionary *preferences = nil;
 	if (!secondary) {
 		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
 		[secondary setAnimationDelay: 0.2];
+		[secondary setContinuousMarqueeExtraBuffer: 14.0];
+
 		// loop scrolling
 		[secondary setMarqueeType: MLContinuous];
 		[self tb_setSecondaryLabel: secondary];
@@ -181,7 +190,7 @@ static NSDictionary *preferences = nil;
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
 	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
-	// CGFloat textLength = secondaryRect.size.width;
+	// CGFloat textLength = secondaryRect.size.width + PADDING * 2 + 14.0;
 
 	// vertically center the title
 	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
@@ -219,7 +228,7 @@ static NSDictionary *preferences = nil;
 	[self addSubview: secondary];
 
 	// Make the banner persist at least as long as the user says or enough for one scroll around
-	CGFloat animationDuration = [secondary animationDuration] + 0.8;
+	CGFloat animationDuration = secondary.animationDuration + secondary.animationDelay;
 	CGFloat replaceDuration = (DURATION_LONG / DEFAULT_DURATION) * 4.0;
 	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
 
@@ -244,13 +253,6 @@ static NSDictionary *preferences = nil;
 	// overriding so it does nothing
 	if (!ENABLED)
 		%orig(arg1);
-}
-
-- (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2 {
-	// Add two spaces to the end of the secondary text to space out the marquee
-	if (![arg1 hasSuffix: @"   "] && ENABLED)
-		arg1 = [arg1 stringByAppendingString:@"  "];
-	%orig(arg1, arg2);
 }
 
 %new
@@ -297,6 +299,15 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	}
 
 	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
+
+	// Show a test notification
+	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
+	[request setTitle: @"TinyBar"];
+	[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
+	[request setSectionID: @"com.apple.Preferences"];
+	[request setDefaultAction: [%c(BBAction) action]];
+  
+    [[%c(SBBulletinBannerController) sharedInstance] observer:nil addBulletin:request forFeed:2];
 }
 
 %ctor {
