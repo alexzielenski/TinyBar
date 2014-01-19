@@ -28,6 +28,22 @@
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
 			<key>key</key>
+			<string>scrollToEnd</string>
+			<key>label</key>
+			<string>Scroll To End</string>
+            <key>PostNotification</key>
+            <string>com.alexzielenski.tinybar/prefsChanged</string>
+            <key>id</key>
+            <string>scrollToEnd</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
+			<key>key</key>
 			<string>showTitle</string>
 			<key>label</key>
 			<string>Show Title</string>
@@ -133,7 +149,7 @@
 			<key>label</key>
 			<string>Long Banner Duration (sec)</string>
 			<key>footerText</key>
-			<string>for banners that need to scroll</string>
+			<string>For banners that need to scroll. Overridden if Scroll To End is enabled</string>
 		</dict>
 		<dict>
 			<key>cell</key>

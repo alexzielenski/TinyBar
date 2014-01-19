@@ -13,7 +13,8 @@
 #define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
 #define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
 #define SHOWICON ([preferences objectForKey: PREFS_SHOWICON_KEY] ? [[preferences objectForKey: PREFS_SHOWICON_KEY] boolValue] : DEFAULT_SHOWICON)
-#define DURATION_LONG (float)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
+#define SCROLLTOEND ([preferences objectForKey: PREFS_SCROLLTOEND_KEY] ? [[preferences objectForKey: PREFS_SCROLLTOEND_KEY] boolValue] : DEFAULT_SCROLLTOEND)
+#define DURATION_LONG (CGFloat)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
 #define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
 
 static NSDictionary *preferences = nil;
@@ -218,11 +219,11 @@ static NSDictionary *preferences = nil;
 	[self addSubview: secondary];
 
 	// Make the banner persist at least as long as the user says or enough for one scroll around
-	CGFloat animationDuration = [secondary animationDuration] + 1.0;
+	CGFloat animationDuration = [secondary animationDuration] + 0.8;
 	CGFloat replaceDuration = (DURATION_LONG / DEFAULT_DURATION) * 4.0;
 	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
 
-	if (animationDuration > replaceDuration) {
+	if (animationDuration > replaceDuration && SCROLLTOEND) {
 		replaceDuration = animationDuration;
 
 		if (animationDuration > DURATION_LONG) {
