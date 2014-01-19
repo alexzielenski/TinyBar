@@ -37,6 +37,7 @@
 	[self setPreferenceValue: @DEFAULT_SPEED specifier: [self specifierForID: PREFS_SPEED_KEY]];
 	[self setPreferenceValue: @DEFAULT_DURATION specifier: [self specifierForID: PREFS_DURATION_KEY]];
 	[self setPreferenceValue: @DEFAULT_ENABLED specifier: [self specifierForID: PREFS_ENABLED_KEY]];
+	[self setPreferenceValue: @DEFAULT_SHOWTITLE specifier: [self specifierForID: PREFS_SHOWTITLE_KEY]];
 	[self reloadSpecifiers];
 	
 	CFNotificationCenterRef r = CFNotificationCenterGetDarwinNotifyCenter();

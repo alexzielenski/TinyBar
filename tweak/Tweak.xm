@@ -7,10 +7,11 @@
 #define PADDING   4.0
 #define IMAGESIZE 14.0
 
-#define SBHEIGHT round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: @"height"] doubleValue] : DEFAULT_HEIGHT)
-#define DURATION  [preferences objectForKey: PREFS_DURATION_KEY] ? [[preferences objectForKey: @"duration"] doubleValue] : DEFAULT_DURATION
-#define SCROLL_SPEED [preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: @"speed"] doubleValue] : DEFAULT_SPEED
-#define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: @"enabled"] boolValue] : DEFAULT_ENABLED)
+#define SBHEIGHT round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: PREFS_HEIGHT_KEY] doubleValue] : DEFAULT_HEIGHT)
+#define DURATION  [preferences objectForKey: PREFS_DURATION_KEY] ? [[preferences objectForKey: PREFS_DURATION_KEY] doubleValue] : DEFAULT_DURATION
+#define SCROLL_SPEED [preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: PREFS_SPEED_KEY] doubleValue] : DEFAULT_SPEED
+#define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
+#define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
 
 static NSDictionary *preferences = nil;
 
@@ -174,8 +175,14 @@ const char *TEXTLABELDATE;
 	}
 
 	[primary setAttributedText: primaryString];
-	[primary setFrame: primaryRect];
-	[self addSubview: primary];
+
+	if (!SHOWTITLE) {
+		primaryRect.size.width = 0;
+		[primary removeFromSuperview];
+	} else {
+		[primary setFrame: primaryRect];
+		[self addSubview: primary];
+	}
 
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
