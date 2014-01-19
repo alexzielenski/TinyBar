@@ -38,6 +38,8 @@
 	[self setPreferenceValue: @DEFAULT_DURATION specifier: [self specifierForID: PREFS_DURATION_KEY]];
 	[self setPreferenceValue: @DEFAULT_ENABLED specifier: [self specifierForID: PREFS_ENABLED_KEY]];
 	[self setPreferenceValue: @DEFAULT_SHOWTITLE specifier: [self specifierForID: PREFS_SHOWTITLE_KEY]];
+	[self setPreferenceValue: @DEFAULT_SHOWICON specifier: [self specifierForID: PREFS_SHOWICON_KEY]];
+	[self setPreferenceValue: @DEFAULT_DURATION_LONG specifier: [self specifierForID: PREFS_DURATION_LONG_KEY]];
 	[self reloadSpecifiers];
 	
 	CFNotificationCenterRef r = CFNotificationCenterGetDarwinNotifyCenter();

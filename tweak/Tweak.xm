@@ -12,6 +12,8 @@
 #define SCROLL_SPEED [preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: PREFS_SPEED_KEY] doubleValue] : DEFAULT_SPEED
 #define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
 #define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
+#define SHOWICON ([preferences objectForKey: PREFS_SHOWICON_KEY] ? [[preferences objectForKey: PREFS_SHOWICON_KEY] boolValue] : DEFAULT_SHOWICON)
+#define DURATION_LONG [preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG
 
 static NSDictionary *preferences = nil;
 
@@ -42,11 +44,17 @@ static NSDictionary *preferences = nil;
 
 	// Make the image our size and vertically center it
 	CGRect imageFrame = CGRectZero;
-	imageFrame.origin.y = floor(height / 2 - IMAGESIZE / 2);
-	imageFrame.origin.x = 0;
-	imageFrame.size.height = IMAGESIZE;
-	imageFrame.size.width = IMAGESIZE;
-	[imageView setFrame: imageFrame];
+
+	if (SHOWICON) {
+		imageFrame.origin.y = floor(height / 2 - IMAGESIZE / 2);
+		imageFrame.origin.x = 0;
+		imageFrame.size.height = IMAGESIZE;
+		imageFrame.size.width = IMAGESIZE;
+		[imageView setFrame: imageFrame];
+		imageView.alpha = 1.0;
+	} else {
+		imageView.alpha = 0.0;
+	}
 
 	// Place the content view PADDING distance away from the image view
 	// and make it fill the rest of the view
@@ -81,19 +89,26 @@ static NSDictionary *preferences = nil;
 @property (assign,nonatomic) UIEdgeInsets clippingInsets;
 -(BOOL)containsAttachments;
 - (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
--(int)_ui_resolvedTextAlignment;
+- (int)_ui_resolvedTextAlignment;
+- (void)tb_dismissAfterDuration:(BOOL)useLong;
++ (id)sharedInstance;
+
+- (UILabel *)tb_titleLabel;
+- (MarqueeLabel *)tb_secondaryLabel;
+- (void)tb_setTitleLabel:(UILabel *)label;
+- (void)tb_setSecondaryLabel:(UILabel *)label;
+
 @end
 
 %hook SBBannerContextView
-
--(void)setClippingInsets:(UIEdgeInsets)arg1 {
+- (void)setClippingInsets:(UIEdgeInsets)arg1 {
 	if (ENABLED)
 		%orig(UIEdgeInsetsZero);
 	else
 		%orig;
 }
 
--(CGRect)_contentFrame {
+- (CGRect)_contentFrame {
 	// For iPad: make the notification banners the entire width of the screen
 	// rather than having them be tiny
 	CGRect o = %orig;
@@ -106,12 +121,25 @@ static NSDictionary *preferences = nil;
 	return CGRectInset([(UIView *)self bounds], PADDING, 0);
 }
 
+%new
+- (void)tb_dismissAfterDuration:(BOOL)useLong {
+	// -layoutSubviews sometimes gets called twice so prevent this method from executing twice
+	if (objc_getAssociatedObject(self, @selector(tb_didDismiss))) {
+		return;
+	}
+
+	objc_setAssociatedObject(self, @selector(tb_didDismiss), @YES, OBJC_ASSOCIATION_RETAIN);
+	NSArray *modes = @[NSRunLoopCommonModes];
+	CGFloat duration = useLong ? DURATION_LONG : DURATION;
+
+	id bannerController = [%c(SBBannerController) sharedInstance];
+	[bannerController performSelector: @selector(_dismissIntervalElapsed) withObject: self afterDelay: duration inModes: modes];
+	[bannerController performSelector: @selector(_replaceIntervalElapsed) withObject: self afterDelay: duration - (floor(duration / DEFAULT_DURATION) * 4) inModes: modes];
+}
+
 %end
 
 %hook SBDefaultBannerTextView
-const char *TEXTLABELPRIMARY;
-const char *TEXTLABELSECONDARY;
-const char *TEXTLABELDATE;
 - (void)layoutSubviews {
 	%orig;
 
@@ -132,21 +160,21 @@ const char *TEXTLABELDATE;
 	CGRect bounds = [(UIView *)self bounds];
 
 	// Create and cache a primary text label
-	UILabel *primary = objc_getAssociatedObject(self, &TEXTLABELPRIMARY);
+	UILabel *primary = [self tb_titleLabel];
 	if (!primary) {
 		primary = [[[UILabel alloc] initWithFrame: CGRectMake(0, 0, 20, bounds.size.height)] autorelease];
-		objc_setAssociatedObject(self, &TEXTLABELPRIMARY, primary, OBJC_ASSOCIATION_RETAIN);
+		[self tb_setTitleLabel: primary];
 	}
 
 	// Create and cache the secondary text label
-	MarqueeLabel *secondary = objc_getAssociatedObject(self, &TEXTLABELSECONDARY);
+	MarqueeLabel *secondary = [self tb_secondaryLabel];
 
 	if (!secondary) {
 		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
 		[secondary setAnimationDelay: 0.2];
 		// loop scrolling
 		[secondary setMarqueeType: MLContinuous];
-		objc_setAssociatedObject(self, &TEXTLABELSECONDARY, secondary, OBJC_ASSOCIATION_RETAIN);
+		[self tb_setSecondaryLabel: secondary];
 	}
 	secondary.rate = SCROLL_SPEED;
 
@@ -184,10 +212,16 @@ const char *TEXTLABELDATE;
 		[self addSubview: primary];
 	}
 
+	CGFloat textLength = secondaryRect.size.width;
+
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width;
 	secondaryRect.size.width  = bounds.size.width - secondaryRect.origin.x;
+
+	// Needed to have the view control when the banner is dismissed whether it needs to scroll or not
+	UIView *bannerView = MSHookIvar<UIView *>([%c(SBBannerController) sharedInstance], "_bannerView");
+	[bannerView tb_dismissAfterDuration: textLength > secondaryRect.size.width];
 
 	if (rtl) {
 		[secondary setMarqueeType: MLContinuousReverse];
@@ -215,13 +249,43 @@ const char *TEXTLABELDATE;
 	%orig(arg1, arg2);
 }
 
+%new
+- (UILabel *)tb_titleLabel {
+	return objc_getAssociatedObject(self, @selector(tb_titleLabel));
+}
+
+%new
+- (MarqueeLabel *)tb_secondaryLabel {
+	return objc_getAssociatedObject(self, @selector(tb_secondaryLabel));
+}
+
+%new
+- (void)tb_setTitleLabel:(UILabel *)label {
+	objc_setAssociatedObject(self, @selector(tb_titleLabel), label, OBJC_ASSOCIATION_RETAIN);
+}
+
+%new
+- (void)tb_setSecondaryLabel:(MarqueeLabel *)label {
+	// NSAssert([label isKindOfClass: %c(MarqueeLabel)], @"tb_setSecondaryLabel: only takes labels of type: MarqueeLabel");
+
+	objc_setAssociatedObject(self, @selector(tb_secondaryLabel), label, OBJC_ASSOCIATION_RETAIN);
+}
+
+- (void)dealloc {
+	[self tb_setTitleLabel: nil];
+	[self tb_setSecondaryLabel: nil];
+	%orig;
+}
+
 %end
 
 %hook SBBannerController
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
-	if (sel_isEqual(aSelector, @selector(_dismissIntervalElapsed)) && ENABLED) {
-		%orig(aSelector, anArgument, DURATION, modes);
+	if ((sel_isEqual(aSelector, @selector(_dismissIntervalElapsed)) || sel_isEqual(aSelector, @selector(_replaceIntervalElapsed))) && ENABLED && ![anArgument isKindOfClass: %c(SBBannerContextView)]) {
+		// do absolutely nothing, the view will dismiss itself
+
+		// %orig(aSelector, anArgument, DURATION, modes);
 	} else {
 		%orig;
 	}
