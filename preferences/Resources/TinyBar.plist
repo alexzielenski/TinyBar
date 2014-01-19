@@ -15,16 +15,16 @@
 			<string>enabled</string>
 			<key>label</key>
 			<string>Enabled</string>
-			<key>alternateColors</key>
-            <true/>
             <key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
+            <key>id</key>
+            <string>enabled</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Banner Height</string>
+			<string>Banner Height (px)</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -38,9 +38,11 @@
 			<key>min</key>
 			<real>20.0</real>
 			<key>max</key>
-			<real>60.0</real>
+			<real>64.0</real>
 			<key>showValue</key>
 			<true/>
+			<key>id</key>
+			<string>height</string>
 			<key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
 		</dict>
@@ -48,7 +50,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Banner Duration</string>
+			<string>Banner Duration (sec)</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -65,6 +67,8 @@
 			<real>30</real>
 			<key>showValue</key>
 			<true/>
+			<key>id</key>
+			<string>duration</string>
 			<key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
 		</dict>
@@ -72,7 +76,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Scroll Speed</string>
+			<string>Scroll Speed (px/sec)</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -89,9 +93,45 @@
 			<real>320</real>
 			<key>showValue</key>
 			<true/>
+			<key>id</key>
+			<string>speed</string>
 			<key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>TinyBar 0.0.2 © 2014 Alex Zielenski</string>
+			<key>isStaticText</key>
+            <true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Reset to Defaults</string>
+			<key>action</key>
+			<string>resetDefaults:</string>
+			<key>id</key>
+			<string>reset</string>
+		</dict>
+        <dict>
+            <key>action</key>
+            <string>visitWebsite:</string>
+            <key>cell</key>
+            <string>PSButtonCell</string>
+            <key>label</key>
+            <string>Visit My Website</string>
+        </dict>
+        <dict>
+            <key>action</key>
+            <string>visitTwitter:</string>
+            <key>cell</key>
+            <string>PSButtonCell</string>
+            <key>label</key>
+            <string>Twitter @alexzielenski</string>
+        </dict>
 	</array>
 	<key>title</key>
 	<string>TinyBar</string>

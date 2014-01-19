@@ -2,14 +2,15 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import "MarqueeLabel.h"
+#import <defines.h>
 
-#define TLog(format, ...) NSLog(@"TinyBar: %@", [NSString stringWithFormat: format, ## __VA_ARGS__])
 #define PADDING   4.0
-#define SBHEIGHT round([preferences objectForKey: @"height"] ? [[preferences objectForKey: @"height"] doubleValue] : 20.0)
 #define IMAGESIZE 14.0
-#define DURATION  [preferences objectForKey: @"duration"] ? [[preferences objectForKey: @"duration"] doubleValue] : 6.375
-#define SCROLL_SPEED [preferences objectForKey: @"speed"] ? [[preferences objectForKey: @"speed"] doubleValue] : 85.0
-#define ENABLED [[preferences objectForKey: @"enabled"] boolValue]
+
+#define SBHEIGHT round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: @"height"] doubleValue] : DEFAULT_HEIGHT)
+#define DURATION  [preferences objectForKey: PREFS_DURATION_KEY] ? [[preferences objectForKey: @"duration"] doubleValue] : DEFAULT_DURATION
+#define SCROLL_SPEED [preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: @"speed"] doubleValue] : DEFAULT_SPEED
+#define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: @"enabled"] boolValue] : DEFAULT_ENABLED)
 
 static NSDictionary *preferences = nil;
 
@@ -221,7 +222,6 @@ const char *TEXTLABELDATE;
 
 %end
 
-#define PREFS_PATH [NSString stringWithFormat:@"%@/Library/Preferences/com.alexzielenski.tinybar.plist", NSHomeDirectory()]
 
 static inline void prefsChanged(CFNotificationCenterRef center,
 									void *observer,
@@ -243,7 +243,7 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 
 	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
 	if (!preferences) {
-		preferences = [NSDictionary dictionaryWithObjectsAndKeys: @6.375, @"duration", @85.0, @"speed", @20.0, @"height", @YES, @"enabled", nil];
+		preferences = DEFAULT_PREFS;
 	}
 
 	CFNotificationCenterRef center = CFNotificationCenterGetDarwinNotifyCenter();

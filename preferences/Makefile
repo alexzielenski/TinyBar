@@ -1,10 +1,14 @@
 include theos/makefiles/common.mk
 
+ARCHS  := armv7 armv7s arm64
+TARGET := iphone:7.0:7.0
+
 BUNDLE_NAME = TinyBar
-TinyBar_FILES = preferences.m
+TinyBar_FILES = preferences.x
 TinyBar_INSTALL_PATH = /Library/PreferenceBundles
 TinyBar_FRAMEWORKS = UIKit
 TinyBar_PRIVATE_FRAMEWORKS = Preferences BulletinBoard
+TinyBar_CFLAGS = -I$(THEOS_PROJECT_DIR)/include
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 
