@@ -14,6 +14,7 @@
 #define SHOWTITLE ([preferences objectForKey: PREFS_SHOWTITLE_KEY] ? [[preferences objectForKey: PREFS_SHOWTITLE_KEY] boolValue] : DEFAULT_SHOWTITLE)
 #define SHOWICON ([preferences objectForKey: PREFS_SHOWICON_KEY] ? [[preferences objectForKey: PREFS_SHOWICON_KEY] boolValue] : DEFAULT_SHOWICON)
 #define DURATION_LONG [preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG
+#define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
 
 static NSDictionary *preferences = nil;
 
@@ -112,7 +113,7 @@ static NSDictionary *preferences = nil;
 	// For iPad: make the notification banners the entire width of the screen
 	// rather than having them be tiny
 	CGRect o = %orig;
-	if (!ENABLED)
+	if (!ENABLED || !STRETCH_BANNER)
 		return o;
 
 	if (o.size.width == 0 || o.size.height == 0)

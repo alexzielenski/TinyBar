@@ -40,6 +40,7 @@
 	[self setPreferenceValue: @DEFAULT_SHOWTITLE specifier: [self specifierForID: PREFS_SHOWTITLE_KEY]];
 	[self setPreferenceValue: @DEFAULT_SHOWICON specifier: [self specifierForID: PREFS_SHOWICON_KEY]];
 	[self setPreferenceValue: @DEFAULT_DURATION_LONG specifier: [self specifierForID: PREFS_DURATION_LONG_KEY]];
+	[self setPreferenceValue: @DEFAULT_STRETCH_BANNER specifier: [self specifierForID: PREFS_STRETCH_BANNER_KEY]];
 	[self reloadSpecifiers];
 	
 	CFNotificationCenterRef r = CFNotificationCenterGetDarwinNotifyCenter();
