@@ -88,8 +88,10 @@ static NSDictionary *preferences = nil;
 -(void)_performTransition:(int)arg1 withAnimation:(BOOL)arg2 context:(id)arg3 reason:(int)arg4 completion:(/*^block*/ id)arg5 {
 	%orig;
 
-	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_replaceIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_dismissIntervalElapsed) object:nil];
+	if (ENABLED) {
+		[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_replaceIntervalElapsed) object:nil];
+		[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_dismissIntervalElapsed) object:nil];
+	}
 }
 
 %end
@@ -193,12 +195,15 @@ static NSDictionary *preferences = nil;
 	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
 	// UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
 
-	BOOL rtl = [secondaryString _ui_resolvedTextAlignment] == NSTextAlignmentRight || [primaryString _ui_resolvedTextAlignment] == NSTextAlignmentRight;
+	NSString *strRep = secondaryString.string;
+	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
+	NSLocaleLanguageDirection direction = (NSLocaleLanguageDirection)[%c(NSLocale) characterDirectionForLanguage:isoLangCode];
+
+	BOOL rtl = (direction == NSLocaleLanguageDirectionRightToLeft);
 
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
 	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
-	// CGFloat textLength = secondaryRect.size.width + PADDING * 2 + 14.0;
 
 	// vertically center the title
 	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
@@ -221,7 +226,7 @@ static NSDictionary *preferences = nil;
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width;
-	secondaryRect.size.width  = bounds.size.width - secondaryRect.origin.x;
+	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
 
 	if (rtl) {
 		[secondary setMarqueeType: MLContinuousReverse];
@@ -230,17 +235,17 @@ static NSDictionary *preferences = nil;
 		[secondary setMarqueeType: MLContinuous];
 	}
 
-	[secondary setTextAlignment: [secondaryString _ui_resolvedTextAlignment]];
+	[secondary setTextAlignment: (rtl) ? NSTextAlignmentRight : NSTextAlignmentLeft];
 	[secondary setFrame: secondaryRect];
 	[secondary setAttributedText: secondaryString];
 	[self addSubview: secondary];
 
 	// Make the banner persist at least as long as the user says or enough for one scroll around
-	CGFloat animationDuration = secondary.animationDuration + secondary.animationDelay;
+	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
 	CGFloat replaceDuration = (DURATION_LONG / DEFAULT_DURATION) * 4.0;
 	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
 
-	if (animationDuration > replaceDuration && SCROLLTOEND) {
+	if (animationDuration > replaceDuration && SCROLLTOEND && animationDuration > secondary.animationDelay) {
 		replaceDuration = animationDuration;
 
 		if (animationDuration > DURATION_LONG) {
@@ -321,13 +326,18 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	// Show a test notification
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
 	[request setTitle: @"TinyBar"];
-	[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		[request setMessage: @"Preferences saved!\nThis is a really really really really really really really really really really really really long test notification to show scrolling."];
+	} else {
+		[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
+	}
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
   
     id ctrl = [%c(SBBulletinBannerController) sharedInstance];
 	[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
     [ctrl observer:nil addBulletin:request forFeed:2];
+    [[%c(SBBannerController) sharedInstance] _replaceIntervalElapsed];
 }
 
 %ctor {
