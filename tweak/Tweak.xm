@@ -97,7 +97,8 @@ static NSDictionary *preferences = nil;
 + (id)action;
 + (id)sharedInstance;
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
-
+- (void)_replaceIntervalElapsed;
+- (void)_dismissIntervalElapsed;
 - (BOOL)containsAttachments;
 - (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
 - (int)_ui_resolvedTextAlignment;
@@ -167,7 +168,7 @@ static NSDictionary *preferences = nil;
 		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
 		[secondary setAnimationDelay: 0.2];
 		[secondary setContinuousMarqueeExtraBuffer: 14.0];
-
+		[secondary setAnimationCurve: UIViewAnimationOptionCurveLinear];
 		// loop scrolling
 		[secondary setMarqueeType: MLContinuous];
 		[self tb_setSecondaryLabel: secondary];
@@ -314,7 +315,9 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
   
-    [[%c(SBBulletinBannerController) sharedInstance] observer:nil addBulletin:request forFeed:2];
+    id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+	[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
+    [ctrl observer:nil addBulletin:request forFeed:2];
 }
 
 %ctor {
