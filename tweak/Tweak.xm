@@ -16,7 +16,7 @@
 #define SCROLLTOEND ([preferences objectForKey: PREFS_SCROLLTOEND_KEY] ? [[preferences objectForKey: PREFS_SCROLLTOEND_KEY] boolValue] : DEFAULT_SCROLLTOEND)
 #define DURATION_LONG (CGFloat)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
 #define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
-
+#define STICKY ([preferences objectForKey: PREFS_STICKY_KEY] ? [[preferences objectForKey: PREFS_STICKY_KEY] boolValue] : DEFAULT_STICKY)
 static NSDictionary *preferences = nil;
 
 %hook SBDefaultBannerView
@@ -83,6 +83,13 @@ static NSDictionary *preferences = nil;
 	// Make the banner window the height of the statusbar
 	o.size.height = SBHEIGHT;
 	return o;
+}
+
+-(void)_performTransition:(int)arg1 withAnimation:(BOOL)arg2 context:(id)arg3 reason:(int)arg4 completion:(/*^block*/ id)arg5 {
+	%orig;
+
+	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_dismissIntervalElapsed) object:nil];
 }
 
 %end
@@ -246,8 +253,11 @@ static NSDictionary *preferences = nil;
 	
 	[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_replaceIntervalElapsed) object:nil];
 	[ctrl performSelector:@selector(_replaceIntervalElapsed) withObject:nil afterDelay:replaceDuration inModes:modes];
-	[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_dismissIntervalElapsed) object:nil];
-	[ctrl performSelector:@selector(_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
+
+	if (!STICKY) {
+		[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_dismissIntervalElapsed) object:nil];
+		[ctrl performSelector:@selector(_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
+	}
 }
 
 - (void)drawRect:(CGRect)arg1 {

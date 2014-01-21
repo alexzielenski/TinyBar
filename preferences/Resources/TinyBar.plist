@@ -22,6 +22,12 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Behavior</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
@@ -40,17 +46,46 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
+			<key>key</key>
+			<string>sticky</string>
+			<key>label</key>
+			<string>Sticky Notifications</string>
+            <key>PostNotification</key>
+            <string>com.alexzielenski.tinybar/prefsChanged</string>
+            <key>id</key>
+            <string>sticky</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
 			<key>key</key>
-			<string>showTitle</string>
+			<string>stretchBanner</string>
 			<key>label</key>
-			<string>Show Title</string>
+			<string>Stretch Banner to Width</string>
             <key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
             <key>id</key>
-            <string>showTitle</string>
+            <string>stretchBanner</string>
+            <key>requiredCapabilities</key>
+            <array>
+            	<dict>
+            		<key>device-name</key>
+            		<string>iPad</string>
+            	</dict>
+            </array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Appearance</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -76,20 +111,13 @@
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
 			<key>key</key>
-			<string>stretchBanner</string>
+			<string>showTitle</string>
 			<key>label</key>
-			<string>Stretch Banner to Width</string>
+			<string>Show Title</string>
             <key>PostNotification</key>
             <string>com.alexzielenski.tinybar/prefsChanged</string>
             <key>id</key>
-            <string>stretchBanner</string>
-            <key>requiredCapabilities</key>
-            <array>
-            	<dict>
-            		<key>device-name</key>
-            		<string>iPad</string>
-            	</dict>
-            </array>
+            <string>showTitle</string>
 		</dict>
 		<dict>
 			<key>cell</key>
