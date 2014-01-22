@@ -17,6 +17,8 @@
 #define DURATION_LONG (CGFloat)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
 #define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
 #define STICKY ([preferences objectForKey: PREFS_STICKY_KEY] ? [[preferences objectForKey: PREFS_STICKY_KEY] boolValue] : DEFAULT_STICKY)
+#define FONT [preferences objectForKey: PREFS_FONT_KEY]
+#define MESSAGEFONT [preferences objectForKey: PREFS_MESSAGEFONT_KEY]
 static NSDictionary *preferences = nil;
 
 %hook SBDefaultBannerView
@@ -195,6 +197,21 @@ static NSDictionary *preferences = nil;
 	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
 	// UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
 
+	// Format Fonts
+	NSString *fontName = FONT;
+	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
+		NSMutableAttributedString *mutPrimary = [primaryString.mutableCopy autorelease];
+		[mutPrimary addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mutPrimary.length)];
+		primaryString = mutPrimary;
+	}
+
+	fontName = MESSAGEFONT;
+	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
+		NSMutableAttributedString *mutSecondary = [secondaryString.mutableCopy autorelease];
+		[mutSecondary addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mutSecondary.length)];
+		secondaryString = mutSecondary;
+	}
+
 	NSString *strRep = secondaryString.string;
 	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
 	NSLocaleLanguageDirection direction = (NSLocaleLanguageDirection)[%c(NSLocale) characterDirectionForLanguage:isoLangCode];
@@ -204,15 +221,13 @@ static NSDictionary *preferences = nil;
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
 	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
+	[primary setAttributedText: primaryString];
 
 	// vertically center the title
 	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
-
 	if (rtl) {
 		primaryRect.origin.x = bounds.size.width + bounds.origin.x - primaryRect.size.width;
 	}
-
-	[primary setAttributedText: primaryString];
 
 	if (!SHOWTITLE) {
 		primaryRect.size.width = 0;
@@ -224,7 +239,7 @@ static NSDictionary *preferences = nil;
 
 
 	// make the secondary text fille the rest of the view and vertically center it
-	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
+	// secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width;
 	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
 
@@ -236,8 +251,15 @@ static NSDictionary *preferences = nil;
 	}
 
 	[secondary setTextAlignment: (rtl) ? NSTextAlignmentRight : NSTextAlignmentLeft];
-	[secondary setFrame: secondaryRect];
 	[secondary setAttributedText: secondaryString];
+	
+	// Align secondary baseline to the title
+	CGFloat scale = [UIScreen mainScreen].scale;
+	CGFloat primaryBaseline = CGRectGetMaxY(primaryRect) + primary.font.descender;
+	CGFloat secondaryBaseline = CGRectGetHeight(secondaryRect) + secondary.font.descender;
+	secondaryRect.origin.y = ceil((primaryBaseline - secondaryBaseline) * scale) / scale;
+
+	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
 
 	// Make the banner persist at least as long as the user says or enough for one scroll around

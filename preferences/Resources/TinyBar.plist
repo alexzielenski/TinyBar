@@ -5,20 +5,20 @@
 	<key>items</key>
 	<array>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>enabled</string>
 			<key>key</key>
 			<string>enabled</string>
 			<key>label</key>
 			<string>Enabled</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>enabled</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -27,59 +27,59 @@
 			<string>Behavior</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>scrollToEnd</string>
 			<key>key</key>
 			<string>scrollToEnd</string>
 			<key>label</key>
 			<string>Scroll To End</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>scrollToEnd</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<false/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>sticky</string>
 			<key>key</key>
 			<string>sticky</string>
 			<key>label</key>
 			<string>Sticky Notifications</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>sticky</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>stretchBanner</string>
 			<key>key</key>
 			<string>stretchBanner</string>
 			<key>label</key>
 			<string>Stretch Banner to Width</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>stretchBanner</string>
-            <key>requiredCapabilities</key>
-            <array>
-            	<dict>
-            		<key>device-name</key>
-            		<string>iPad</string>
-            	</dict>
-            </array>
+			<key>requiredCapabilities</key>
+			<array>
+				<dict>
+					<key>device-name</key>
+					<string>iPad</string>
+				</dict>
+			</array>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -88,36 +88,84 @@
 			<string>Appearance</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>showIcon</string>
 			<key>key</key>
 			<string>showIcon</string>
 			<key>label</key>
 			<string>Show Icon</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>showIcon</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>showTitle</string>
 			<key>key</key>
 			<string>showTitle</string>
 			<key>label</key>
 			<string>Show Title</string>
-            <key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
-            <key>id</key>
-            <string>showTitle</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>font</string>
+			<key>key</key>
+			<string>font</string>
+			<key>label</key>
+			<string>Title Font</string>
+			<key>valuesDataSource</key>
+			<string>fontValues</string>
+			<key>titlesDataSource</key>
+			<string>fontValues</string>
+			<key>get</key>
+			<string>fontFamilyForSpecifier:</string>
+			<key>default</key>
+			<string>Default</string>
+			<key>detail</key>
+            <string>TBFontListController</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
+			<key>id</key>
+			<string>messageFont</string>
+			<key>key</key>
+			<string>messageFont</string>
+			<key>label</key>
+			<string>Message Font</string>
+			<key>valuesDataSource</key>
+			<string>fontValues</string>
+			<key>titlesDataSource</key>
+			<string>fontValues</string>
+			<key>get</key>
+			<string>fontFamilyForSpecifier:</string>
+			<key>default</key>
+			<string>Default</string>
+			<key>detail</key>
+            <string>TBFontListController</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -126,24 +174,24 @@
 			<string>Banner Height (px)</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>20</real>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
-			<key>key</key>
-			<string>height</string>
-			<key>default</key>
-			<real>20.0</real>
-			<key>min</key>
-			<real>20.0</real>
-			<key>max</key>
-			<real>64.0</real>
-			<key>showValue</key>
-			<true/>
 			<key>id</key>
 			<string>height</string>
-			<key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>key</key>
+			<string>height</string>
+			<key>max</key>
+			<real>64</real>
+			<key>min</key>
+			<real>20</real>
+			<key>showValue</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -152,52 +200,52 @@
 			<string>Banner Duration (sec)</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSliderCell</string>
-			<key>defaults</key>
-			<string>com.alexzielenski.tinybar</string>
-			<key>key</key>
-			<string>duration</string>
 			<key>default</key>
 			<real>6.375</real>
-			<key>min</key>
-			<real>1.0</real>
-			<key>max</key>
-			<real>30</real>
-			<key>showValue</key>
-			<true/>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
 			<key>id</key>
 			<string>duration</string>
-			<key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>key</key>
+			<string>duration</string>
+			<key>max</key>
+			<real>30</real>
+			<key>min</key>
+			<real>1</real>
+			<key>showValue</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>Long Banner Duration (sec)</string>
 			<key>footerText</key>
 			<string>For banners that need to scroll. Overridden if Scroll To End is enabled</string>
+			<key>label</key>
+			<string>Long Banner Duration (sec)</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSliderCell</string>
-			<key>defaults</key>
-			<string>com.alexzielenski.tinybar</string>
-			<key>key</key>
-			<string>durationLong</string>
 			<key>default</key>
 			<real>10.375</real>
-			<key>min</key>
-			<real>1.0</real>
-			<key>max</key>
-			<real>30</real>
-			<key>showValue</key>
-			<true/>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
 			<key>id</key>
 			<string>durationLong</string>
-			<key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>key</key>
+			<string>durationLong</string>
+			<key>max</key>
+			<real>30</real>
+			<key>min</key>
+			<real>1</real>
+			<key>showValue</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -206,59 +254,59 @@
 			<string>Scroll Speed (px/sec)</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSSliderCell</string>
-			<key>defaults</key>
-			<string>com.alexzielenski.tinybar</string>
-			<key>key</key>
-			<string>speed</string>
 			<key>default</key>
 			<real>85</real>
-			<key>min</key>
-			<real>10.0</real>
-			<key>max</key>
-			<real>320</real>
-			<key>showValue</key>
-			<true/>
+			<key>defaults</key>
+			<string>com.alexzielenski.tinybar</string>
 			<key>id</key>
 			<string>speed</string>
-			<key>PostNotification</key>
-            <string>com.alexzielenski.tinybar/prefsChanged</string>
+			<key>key</key>
+			<string>speed</string>
+			<key>max</key>
+			<real>320</real>
+			<key>min</key>
+			<real>10</real>
+			<key>showValue</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>TinyBar 0.0.4 © 2014 Alex Zielenski</string>
+			<string>TinyBar 0.0.5 © 2014 Alex Zielenski</string>
 			<key>isStaticText</key>
-            <true/>
+			<true/>
 		</dict>
 		<dict>
+			<key>action</key>
+			<string>resetDefaults:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>id</key>
+			<string>reset</string>
+			<key>label</key>
+			<string>Reset to Defaults</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>visitWebsite:</string>
 			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
-			<string>Reset to Defaults</string>
-			<key>action</key>
-			<string>resetDefaults:</string>
-			<key>id</key>
-			<string>reset</string>
+			<string>Visit My Website</string>
 		</dict>
-        <dict>
-            <key>action</key>
-            <string>visitWebsite:</string>
-            <key>cell</key>
-            <string>PSButtonCell</string>
-            <key>label</key>
-            <string>Visit My Website</string>
-        </dict>
-        <dict>
-            <key>action</key>
-            <string>visitTwitter:</string>
-            <key>cell</key>
-            <string>PSButtonCell</string>
-            <key>label</key>
-            <string>Twitter @alexzielenski</string>
-        </dict>
+		<dict>
+			<key>action</key>
+			<string>visitTwitter:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Twitter @alexzielenski</string>
+		</dict>
 	</array>
 	<key>title</key>
 	<string>TinyBar</string>
