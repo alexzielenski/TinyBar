@@ -6,6 +6,7 @@ TinyBar_INSTALL_PATH = /Library/PreferenceBundles
 TinyBar_FRAMEWORKS = UIKit
 TinyBar_PRIVATE_FRAMEWORKS = Preferences BulletinBoard
 TinyBar_CFLAGS = -I$(THEOS_PROJECT_DIR)/include
+TinyBar_LIBRARIES = applist
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

@@ -78,6 +78,13 @@ static void reloadPreferences() {
 	}
 }
 
+static BOOL isApplicationBlacklisted(NSString *sectionID) {
+	NSNumber *value = [preferences objectForKey: [@"blacklist_" stringByAppendingString: sectionID]];
+	if (!value)
+		return NO;
+	return value.boolValue;
+}
+
 %hook SBDefaultBannerView
 
 - (void)layoutSubviews {
@@ -140,9 +147,22 @@ static void reloadPreferences() {
 
 %hook SBBannerController
 
+- (void)_presentBannerForContext:(id)arg1 reason:(long long)arg2 {
+	%log;
+	%orig(arg1, arg2);
+}
+
 - (CGRect)_bannerFrameForOrientation:(int)arg1 {
+	_pulledDown = NO;
+	
+	id bulletin = [self valueForKeyPath: @"_bannerView.bannerContext.item.seedBulletin"];
+	if (isApplicationBlacklisted([bulletin sectionID])) {
+		TLog(@"blacklisted");
+		_pulledDown = YES;
+	}
+	
 	CGRect o = %orig;
-	if (!ENABLED)
+	if (!ENABLED || _pulledDown)
 		return o;
 
 	if (o.size.width == 0 || o.size.height == 0)
@@ -154,22 +174,20 @@ static void reloadPreferences() {
 }
 
 - (void)_setupBannerDismissTimers {
-	_pulledDown = NO;
-
-	// %log;
+	%log;
 	%orig;
 }
 
 - (void)_cancelBannerDismissTimers {
-	// %log;
+	%log;
 	%orig;
 }
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
-	// %log;
+	%log;
 	   
     NSString *sel = NSStringFromSelector(aSelector);
-    if (ENABLED) {
+    if (ENABLED && !_pulledDown) {
 		if ([sel isEqualToString: @"_replaceIntervalElapsed"]) {
 			delay = _replaceInterval;
 		} else if ([sel isEqualToString: @"_dismissIntervalElapsed"]) {
@@ -181,24 +199,33 @@ static void reloadPreferences() {
     }
 	%orig(aSelector, anArgument, delay, modes);
 }
-// 
-// - (void)_replaceIntervalElapsed {
-//     %log;
-//     %orig;
-// }
-// 
-// - (void)_dismissIntervalElapsed {
-//     %log;
-//     %orig;
-// }
+
+- (void)_replaceIntervalElapsed {
+    %log;
+    %orig;
+}
+
+- (void)_dismissIntervalElapsed {
+    %log;
+    %orig;
+}
 
 %end
 
 %hook SBBannerContainerViewController
 
 - (CGRect)_bannerFrameForOrientation:(long long)arg1 {
+%log;
+	_pulledDown = NO;
+	
+	id bulletin = [self valueForKeyPath: @"_bannerContext.item.seedBulletin"];
+	if (isApplicationBlacklisted([bulletin sectionID])) {
+		TLog(@"blacklisted");
+		_pulledDown = YES;
+	}
+
 	CGRect o = %orig;
-	if (!ENABLED)
+	if (!ENABLED || _pulledDown)
 		return o;
 	
 	if (o.size.width == 0 || o.size.height == 0)
@@ -221,7 +248,7 @@ static void reloadPreferences() {
 %hook SBBannerContextView
 
 - (void)setClippingInsets:(UIEdgeInsets)arg1 {
-	if (ENABLED)
+	if (ENABLED && !_pulledDown)
 		%orig(UIEdgeInsetsZero);
 	else
 		%orig;
@@ -231,7 +258,7 @@ static void reloadPreferences() {
 	// For iPad: make the notification banners the entire width of the screen
 	// rather than having them be tiny
 	CGRect o = %orig;
-	if (!ENABLED || !STRETCH_BANNER)
+	if (!ENABLED || !STRETCH_BANNER || _pulledDown)
 		return o;
 
 	if (o.size.width == 0 || o.size.height == 0)
@@ -243,7 +270,7 @@ static void reloadPreferences() {
 // iOS 8+ to add padding
 - (CGRect)_centeredBounds {
     CGRect o = %orig;
-    if (!ENABLED || !STRETCH_BANNER)
+    if (!ENABLED || !STRETCH_BANNER || _pulledDown)
         return o;
     
     if (o.size.width == 0 || o.size.height == 0)
@@ -257,11 +284,11 @@ static void reloadPreferences() {
 }
 
 - (double)_grabberAlpha {
-	return ENABLED ? 0.0 : %orig;
+	return ENABLED && !_pulledDown ? 0.0 : %orig;
 }
 
 - (double)minimumHeight {
-	return ENABLED ? SBHEIGHT : %orig;
+	return ENABLED && !_pulledDown ? SBHEIGHT : %orig;
 }
 
 %end
@@ -302,6 +329,7 @@ static void reloadPreferences() {
 }
 
 - (void)layoutSubviews {
+	%log;
 	%orig;
 	
 	// Remove date label on iOS7.1+
@@ -339,9 +367,14 @@ static void reloadPreferences() {
 	// get our strings from ivars
 	NSAttributedString *primaryString = MSHookIvar<NSAttributedString *>(self, "_primaryTextAttributedStringComponent");
 	NSAttributedString *secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
-	NSAttributedString *secondaryString = [self _newAttributedStringForSecondaryText: [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "]
-	italicized: [self _isItalicizedAttributedString: secondaryAtr]];
-
+	NSAttributedString *secondaryString = nil;
+	NSString *secondaryText = [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
+	if (IS_IOS_8_PLUS()) {
+		secondaryString = [self _newAttributedStringForSecondaryText: secondaryText
+														 italicized: [self _isItalicizedAttributedString: secondaryAtr]];
+	} else {
+		secondaryString = [[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]];
+	}
 
 	// Format Fonts
 	primaryString = [self tb_addFont: FONT toString: primaryString];
@@ -414,9 +447,7 @@ static void reloadPreferences() {
 	_replaceInterval = replaceDuration;
 	
 	
-	id bctrl = [%c(SBBannerController) sharedInstance];
-	
-	TLog(@"1");
+	id bctrl = [%c(SBBannerController) sharedInstance];	
 }
 
 - (void)drawRect:(CGRect)arg1 {
@@ -483,8 +514,8 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 		[bctrl _cancelBannerDismissTimers];
 	}
 	
-	[NSObject cancelPreviousPerformRequestsWithTarget:btcl selector:@selector(_replaceIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:btcl selector:@selector(_dismissIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
 
     // Hide previous banner
     [bctrl _replaceIntervalElapsed];
