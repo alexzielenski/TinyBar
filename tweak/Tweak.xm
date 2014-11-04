@@ -25,6 +25,7 @@
 static NSDictionary *preferences = nil;
 static CGFloat _dismissInterval = 0;
 static CGFloat _replaceInterval = 0;
+static BOOL _pulledDown = NO;
 
 // Silence Warnings
 @interface NSObject ()
@@ -165,73 +166,39 @@ static void reloadPreferences() {
 - (void)_setupBannerDismissTimers {
 	// %log;
 	%orig;
-	[self tb_scheduleTimers];
 }
 
 - (void)_cancelBannerDismissTimers {
 	// %log;
 	%orig;
-	[self tb_cancelTimers];
-}
-
-%new
-- (void)tb_scheduleTimers {
-	if (!ENABLED)
-		return;
-		
-	CGFloat dismissDuration = _dismissInterval;
-	CGFloat replaceDuration = _replaceInterval;
-		
-	NSArray *modes = @[NSRunLoopCommonModes];
-	
-	[self performSelector:@selector(tb_replaceIntervalElapsed) withObject:nil afterDelay:replaceDuration inModes:modes];
-	
-	if (!STICKY) {
-		[self performSelector:@selector(tb_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
-	}
-}
-
-%new
-- (void)tb_cancelTimers {
-	if (!ENABLED)
-		return;
-	
-	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(tb_replaceIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(tb_dismissIntervalElapsed) object:nil];
 }
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
 	// %log;
 	   
-   NSString *sel = NSStringFromSelector(aSelector);
-   if (ENABLED && ([sel isEqualToString: @"_replaceIntervalElapsed"] || [sel isEqualToString: @"_dismissIntervalElapsed"])) {
-   	// do nothing
-   } else {
-		%orig(aSelector, anArgument, delay, modes);
-   }
+    NSString *sel = NSStringFromSelector(aSelector);
+    if (ENABLED) {
+		if ([sel isEqualToString: @"_replaceIntervalElapsed"]) {
+			delay = _replaceInterval;
+		} else if ([sel isEqualToString: @"_dismissIntervalElapsed"]) {
+			if (STICKY)
+				return;
+			delay = _dismissInterval;
+		}
+		
+    }
+	%orig(aSelector, anArgument, delay, modes);
 }
-
-- (void)_replaceIntervalElapsed {
-	// %log;
-	%orig;
-}
-
-- (void)_dismissIntervalElapsed {
-	// %log;
-	%orig;
-}
-
-%new
-- (void)tb_replaceIntervalElapsed {
-	%log;
-	[self _replaceIntervalElapsed];
-}
-
-%new
-- (void)tb_dismissIntervalElapsed {
-	%log;
-	[self _dismissIntervalElapsed];
-}
+// 
+// - (void)_replaceIntervalElapsed {
+//     %log;
+//     %orig;
+// }
+// 
+// - (void)_dismissIntervalElapsed {
+//     %log;
+//     %orig;
+// }
 
 %end
 
@@ -471,16 +438,6 @@ static void reloadPreferences() {
 }
 
 %new
-- (BOOL)tb_didSchedule {
-	return [objc_getAssociatedObject(self, @selector(tb_didSchedule)) boolValue];
-}
-
-%new
-- (void)tb_setDidSchedule:(BOOL)value {
-	objc_setAssociatedObject(self, @selector(tb_didSchedule), @(value), OBJC_ASSOCIATION_RETAIN);
-}
-
-%new
 - (UILabel *)tb_titleLabel {
 	return objc_getAssociatedObject(self, @selector(tb_titleLabel));
 }
@@ -533,21 +490,19 @@ static inline void prefsChanged(CFNotificationCenterRef center,
   
 	id bctrl = [%c(SBBannerController) sharedInstance];
 	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-
-	if ([bctrl respondsToSelector:@selector(_cancelBannerDismissTimers)]) {
+	
+	if (IS_IOS_8_PLUS()) {
 		[bctrl _cancelBannerDismissTimers];
 	}
 	
-	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_replaceIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_dismissIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
-	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:btcl selector:@selector(_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:btcl selector:@selector(_dismissIntervalElapsed) object:nil];
 
     // Hide previous banner
     [bctrl _replaceIntervalElapsed];
  	[bctrl _dismissIntervalElapsed];
-    
-    [ctrl observer:nil addBulletin:request forFeed:2];    
+
+    [ctrl observer:nil addBulletin:request forFeed:2];
 }
 
 %ctor {
