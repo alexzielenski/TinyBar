@@ -55,6 +55,8 @@ static BOOL _pulledDown = NO;
 - (void)_cancelBannerDismissTimers;
 - (void)_setUpBannerDismissTimers;
 
+- (BOOL)_isItalicizedAttributedString:(NSAttributedString *)arg1;
+- (NSAttributedString *)_newAttributedStringForSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2;
 @end
 
 static void reloadPreferences() {
@@ -92,7 +94,7 @@ static void reloadPreferences() {
 		grabberView = object_getIvar(self, grabberVar);
 	}
 
-	if (!ENABLED) {
+	if (!ENABLED || _pulledDown) {
 		attachment.alpha = 1.0;
 		grabberView.alpha = 1.0;
 		return;
@@ -152,6 +154,8 @@ static void reloadPreferences() {
 }
 
 - (void)_setupBannerDismissTimers {
+	_pulledDown = NO;
+
 	// %log;
 	%orig;
 }
@@ -203,6 +207,13 @@ static void reloadPreferences() {
 	// Make the banner window the height of the statusbar
 	o.size.height = SBHEIGHT;
 	return o;
+}
+
+- (void)_noteDidPullDown {
+	//Disable tinybar
+	%log;
+	_pulledDown = YES;
+	%orig;
 }
 
 %end
@@ -299,7 +310,7 @@ static void reloadPreferences() {
 		UILabel *dateLabel = object_getIvar(self, labelVar);
 		if (dateLabel && [dateLabel isKindOfClass: %c(UILabel)]) {
 			
-			if (!ENABLED)
+			if (!ENABLED || _pulledDown)
 				[dateLabel setAlpha: 1.0];
 			else
 				[dateLabel setAlpha: 0.0];
@@ -319,7 +330,7 @@ static void reloadPreferences() {
 	
 	secondary.rate = SCROLL_SPEED;
 
-	if (!ENABLED) {
+	if (!ENABLED || _pulledDown) {
 		[primary removeFromSuperview];
 		[secondary removeFromSuperview];
 		return;
@@ -327,7 +338,10 @@ static void reloadPreferences() {
 
 	// get our strings from ivars
 	NSAttributedString *primaryString = MSHookIvar<NSAttributedString *>(self, "_primaryTextAttributedStringComponent");
-	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
+	NSAttributedString *secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
+	NSAttributedString *secondaryString = [self _newAttributedStringForSecondaryText: [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "]
+	italicized: [self _isItalicizedAttributedString: secondaryAtr]];
+
 
 	// Format Fonts
 	primaryString = [self tb_addFont: FONT toString: primaryString];
@@ -382,7 +396,6 @@ static void reloadPreferences() {
 
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
-
 	
 	//	Make the banner persist at least as long as the user says or enough for one scroll around
 	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
@@ -408,15 +421,8 @@ static void reloadPreferences() {
 
 - (void)drawRect:(CGRect)arg1 {
 	// overriding so it does nothing
-	if (!ENABLED)
+	if (!ENABLED || _pulledDown)
 		%orig(arg1);
-}
-
-- (void)setSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2 {
-	if (ENABLED)
-		%orig([arg1 stringByReplacingOccurrencesOfString: @"\n" withString: @" "], arg2);
-	else
-		%orig;
 }
 
 %new
