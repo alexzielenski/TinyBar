@@ -19,9 +19,54 @@
 #define STICKY ([preferences objectForKey: PREFS_STICKY_KEY] ? [[preferences objectForKey: PREFS_STICKY_KEY] boolValue] : DEFAULT_STICKY)
 #define FONT [preferences objectForKey: PREFS_FONT_KEY]
 #define MESSAGEFONT [preferences objectForKey: PREFS_MESSAGEFONT_KEY]
+
+#define IS_IOS_8_PLUS() [%c(SBBannerController) instancesRespondToSelector: @selector(_cancelBannerDismissTimers)]
+
 static NSDictionary *preferences = nil;
 static CGFloat _dismissInterval = 0;
 static CGFloat _replaceInterval = 0;
+
+// Silence Warnings
+@interface NSObject ()
+@property (assign,nonatomic) UIEdgeInsets clippingInsets;
+@property (copy, nonatomic) NSString *message;
+@property (copy, nonatomic) NSString *subtitle;
+@property (copy, nonatomic) NSString *title;
+@property (copy, nonatomic) NSString *sectionID;
+@property (copy, nonatomic) id defaultAction;
++ (id)action;
++ (id)sharedInstance;
+- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
+- (void)_replaceIntervalElapsed;
+- (void)_dismissIntervalElapsed;
+- (BOOL)containsAttachments;
+- (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
+- (int)_ui_resolvedTextAlignment;
+
+- (UILabel *)tb_titleLabel;
+- (MarqueeLabel *)tb_secondaryLabel;
+- (void)tb_setTitleLabel:(UILabel *)label;
+- (void)tb_setSecondaryLabel:(UILabel *)label;
+
+- (void)tb_createLabelsIfNecessary;
+- (NSAttributedString *)tb_addFont:(NSString *)font toString:(NSAttributedString *)string;
+
+- (void)_cancelBannerDismissTimers;
+- (void)_setUpBannerDismissTimers;
+- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+
+- (BOOL)tb_didSchedule;
+- (void)tb_setDidSchedule:(BOOL)value;
+
+
+- (void)tb_replaceIntervalElapsed;
+- (void)tb_dismissIntervalElapsed;
+
+- (void)tb_scheduleTimers;
+- (void)tb_cancelTimers;
+- (void)_dismissIntervalElapsed;
+- (void)_replaceIntervalElapsed;
+@end
 
 static void reloadPreferences() {
 	if (preferences) {
@@ -29,10 +74,14 @@ static void reloadPreferences() {
 		preferences = nil;
 	}
 	
-	// Use CFPreferences since sometimes the prefs dont synchronize to the disk immediately
-	NSArray *keyList = [(NSArray *)CFPreferencesCopyKeyList((CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) autorelease];
-	preferences = (NSDictionary *)CFPreferencesCopyMultiple((CFArrayRef)keyList, (CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	
+	if (IS_IOS_8_PLUS()) {
+		// Use CFPreferences since sometimes the prefs dont synchronize to the disk immediately
+		NSArray *keyList = [(NSArray *)CFPreferencesCopyKeyList((CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) autorelease];
+		preferences = (NSDictionary *)CFPreferencesCopyMultiple((CFArrayRef)keyList, (CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	} else {
+		// CFPreferences don't sync immediately but the disk does
+		preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
+	}
 	if (!preferences || preferences.count == 0) {
 		preferences = [DEFAULT_PREFS retain];
 	}
@@ -110,9 +159,19 @@ static void reloadPreferences() {
 }
 
 - (void)_setupBannerDismissTimers {
-	%log;
+	// %log;
 	%orig;
-	
+	[self tb_scheduleTimers];
+}
+
+- (void)_cancelBannerDismissTimers {
+	// %log;
+	%orig;
+	[self tb_cancelTimers];
+}
+
+%new
+- (void)tb_scheduleTimers {
 	if (!ENABLED)
 		return;
 		
@@ -128,10 +187,8 @@ static void reloadPreferences() {
 	}
 }
 
-- (void)_cancelBannerDismissTimers {
-	%log;
-	%orig;
-	
+%new
+- (void)tb_cancelTimers {
 	if (!ENABLED)
 		return;
 	
@@ -140,7 +197,7 @@ static void reloadPreferences() {
 }
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
-	%log;
+	// %log;
 	   
    NSString *sel = NSStringFromSelector(aSelector);
    if (ENABLED && ([sel isEqualToString: @"_replaceIntervalElapsed"] || [sel isEqualToString: @"_dismissIntervalElapsed"])) {
@@ -151,12 +208,12 @@ static void reloadPreferences() {
 }
 
 - (void)_replaceIntervalElapsed {
-	%log;
+	// %log;
 	%orig;
 }
 
 - (void)_dismissIntervalElapsed {
-	%log;
+	// %log;
 	%orig;
 }
 
@@ -190,42 +247,6 @@ static void reloadPreferences() {
 }
 
 %end
-
-@interface NSObject ()
-@property (assign,nonatomic) UIEdgeInsets clippingInsets;
-@property (copy, nonatomic) NSString *message;
-@property (copy, nonatomic) NSString *subtitle;
-@property (copy, nonatomic) NSString *title;
-@property (copy, nonatomic) NSString *sectionID;
-@property (copy, nonatomic) id defaultAction;
-+ (id)action;
-+ (id)sharedInstance;
-- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
-- (void)_replaceIntervalElapsed;
-- (void)_dismissIntervalElapsed;
-- (BOOL)containsAttachments;
-- (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
-- (int)_ui_resolvedTextAlignment;
-
-- (UILabel *)tb_titleLabel;
-- (MarqueeLabel *)tb_secondaryLabel;
-- (void)tb_setTitleLabel:(UILabel *)label;
-- (void)tb_setSecondaryLabel:(UILabel *)label;
-
-- (void)tb_createLabelsIfNecessary;
-- (NSAttributedString *)tb_addFont:(NSString *)font toString:(NSAttributedString *)string;
-
-- (void)_cancelBannerDismissTimers;
-- (void)_setUpBannerDismissTimers;
-- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
-
-- (BOOL)tb_didSchedule;
-- (void)tb_setDidSchedule:(BOOL)value;
-
-
-- (void)tb_replaceIntervalElapsed;
-- (void)tb_dismissIntervalElapsed;
-@end
 
 %hook SBBannerContextView
 
@@ -419,6 +440,16 @@ static void reloadPreferences() {
 		
 	_dismissInterval = dismissDuration;
 	_replaceInterval = replaceDuration;
+	
+	
+	id bctrl = [%c(SBBannerController) sharedInstance];
+	
+	// Scheduling for iOS 7
+	if (!IS_IOS_8_PLUS()) {
+		[bctrl tb_cancelTimers];
+		[bctrl tb_scheduleTimers];
+	}
+	
 	TLog(@"1");
 }
 
@@ -503,10 +534,10 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 		[bctrl _cancelBannerDismissTimers];
 	}
 	
-	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_replaceIntervalElapsed) object:nil];
-	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_dismissIntervalElapsed) object:nil];
-	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
-	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_dismissIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
 
     // Hide previous banner
     [bctrl _replaceIntervalElapsed];
