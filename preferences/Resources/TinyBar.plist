@@ -124,48 +124,48 @@
 			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSLinkListCell</string>
+			<key>default</key>
+			<string>Default</string>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>detail</key>
+			<string>TBFontListController</string>
+			<key>get</key>
+			<string>fontFamilyForSpecifier:</string>
 			<key>id</key>
 			<string>font</string>
 			<key>key</key>
 			<string>font</string>
 			<key>label</key>
 			<string>Title Font</string>
-			<key>valuesDataSource</key>
-			<string>fontValues</string>
 			<key>titlesDataSource</key>
 			<string>fontValues</string>
-			<key>get</key>
-			<string>fontFamilyForSpecifier:</string>
-			<key>default</key>
-			<string>Default</string>
-			<key>detail</key>
-            <string>TBFontListController</string>
+			<key>valuesDataSource</key>
+			<string>fontValues</string>
 		</dict>
 		<dict>
 			<key>PostNotification</key>
 			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
 			<string>PSLinkListCell</string>
+			<key>default</key>
+			<string>Default</string>
 			<key>defaults</key>
 			<string>com.alexzielenski.tinybar</string>
+			<key>detail</key>
+			<string>TBFontListController</string>
+			<key>get</key>
+			<string>fontFamilyForSpecifier:</string>
 			<key>id</key>
 			<string>messageFont</string>
 			<key>key</key>
 			<string>messageFont</string>
 			<key>label</key>
 			<string>Message Font</string>
-			<key>valuesDataSource</key>
-			<string>fontValues</string>
 			<key>titlesDataSource</key>
 			<string>fontValues</string>
-			<key>get</key>
-			<string>fontFamilyForSpecifier:</string>
-			<key>default</key>
-			<string>Default</string>
-			<key>detail</key>
-            <string>TBFontListController</string>
+			<key>valuesDataSource</key>
+			<string>fontValues</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -277,7 +277,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>TinyBar 0.0.5 © 2014 Alex Zielenski</string>
+			<string>TinyBar 0.0.5 © 2014 Alex Zielenski Icon by @andreaslarsendk</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>

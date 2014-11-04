@@ -20,16 +20,39 @@
 #define FONT [preferences objectForKey: PREFS_FONT_KEY]
 #define MESSAGEFONT [preferences objectForKey: PREFS_MESSAGEFONT_KEY]
 static NSDictionary *preferences = nil;
+static CGFloat _dismissInterval = 0;
+static CGFloat _replaceInterval = 0;
+
+static void reloadPreferences() {
+	if (preferences) {
+		[preferences release];
+		preferences = nil;
+	}
+	
+	// Use CFPreferences since sometimes the prefs dont synchronize to the disk immediately
+	NSArray *keyList = [(NSArray *)CFPreferencesCopyKeyList((CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) autorelease];
+	preferences = (NSDictionary *)CFPreferencesCopyMultiple((CFArrayRef)keyList, (CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	
+	if (!preferences || preferences.count == 0) {
+		preferences = [DEFAULT_PREFS retain];
+	}
+}
 
 %hook SBDefaultBannerView
 
--(void)layoutSubviews {
+- (void)layoutSubviews {
 	%orig;
-
+	
 	UIImageView *attachment = MSHookIvar<UIImageView *>(self, "_attachmentImageView");
 	UIView *textView = MSHookIvar<UIView *>(self, "_textView");
 	UIView *imageView = MSHookIvar<UIView *>(self, "_iconImageView");
-	UIView *grabberView = MSHookIvar<UIView *>(self, "_grabberView");
+	UIView *grabberView = nil;
+
+	// The grabber view was removed in iOS 8
+	Ivar grabberVar = class_getInstanceVariable([self class], "_grabberView");
+	if (grabberVar != NULL) {
+		grabberView = object_getIvar(self, grabberVar);
+	}
 
 	if (!ENABLED) {
 		attachment.alpha = 1.0;
@@ -44,13 +67,12 @@ static NSDictionary *preferences = nil;
 	attachment.alpha = 0.0;
 
 	CGRect bounds = [(UIView *)self bounds];
-	CGFloat height = SBHEIGHT;
 
 	// Make the image our size and vertically center it
 	CGRect imageFrame = CGRectZero;
-
+	
 	if (SHOWICON) {
-		imageFrame.origin.y = floor(height / 2 - IMAGESIZE / 2);
+		imageFrame.origin.y = floor(bounds.size.height / 2 - IMAGESIZE / 2);
 		imageFrame.origin.x = 0;
 		imageFrame.size.height = IMAGESIZE;
 		imageFrame.size.width = IMAGESIZE;
@@ -74,7 +96,7 @@ static NSDictionary *preferences = nil;
 
 %hook SBBannerController
 
--(CGRect)_bannerFrameForOrientation:(int)arg1 {
+- (CGRect)_bannerFrameForOrientation:(int)arg1 {
 	CGRect o = %orig;
 	if (!ENABLED)
 		return o;
@@ -87,13 +109,84 @@ static NSDictionary *preferences = nil;
 	return o;
 }
 
--(void)_performTransition:(int)arg1 withAnimation:(BOOL)arg2 context:(id)arg3 reason:(int)arg4 completion:(/*^block*/ id)arg5 {
+- (void)_setupBannerDismissTimers {
+	%log;
 	%orig;
-
-	if (ENABLED) {
-		[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_replaceIntervalElapsed) object:nil];
-		[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_dismissIntervalElapsed) object:nil];
+	
+	if (!ENABLED)
+		return;
+		
+	CGFloat dismissDuration = _dismissInterval;
+	CGFloat replaceDuration = _replaceInterval;
+		
+	NSArray *modes = @[NSRunLoopCommonModes];
+	
+	[self performSelector:@selector(tb_replaceIntervalElapsed) withObject:nil afterDelay:replaceDuration inModes:modes];
+	
+	if (!STICKY) {
+		[self performSelector:@selector(tb_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
 	}
+}
+
+- (void)_cancelBannerDismissTimers {
+	%log;
+	%orig;
+	
+	if (!ENABLED)
+		return;
+	
+	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(tb_replaceIntervalElapsed) object:nil];
+	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(tb_dismissIntervalElapsed) object:nil];
+}
+
+- (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
+	%log;
+	   
+   NSString *sel = NSStringFromSelector(aSelector);
+   if (ENABLED && ([sel isEqualToString: @"_replaceIntervalElapsed"] || [sel isEqualToString: @"_dismissIntervalElapsed"])) {
+   	// do nothing
+   } else {
+		%orig(aSelector, anArgument, delay, modes);
+   }
+}
+
+- (void)_replaceIntervalElapsed {
+	%log;
+	%orig;
+}
+
+- (void)_dismissIntervalElapsed {
+	%log;
+	%orig;
+}
+
+%new
+- (void)tb_replaceIntervalElapsed {
+	%log;
+	[self _replaceIntervalElapsed];
+}
+
+%new
+- (void)tb_dismissIntervalElapsed {
+	%log;
+	[self _dismissIntervalElapsed];
+}
+
+%end
+
+%hook SBBannerContainerViewController
+
+- (CGRect)_bannerFrameForOrientation:(long long)arg1 {
+	CGRect o = %orig;
+	if (!ENABLED)
+		return o;
+	
+	if (o.size.width == 0 || o.size.height == 0)
+		return o;
+	
+	// Make the banner window the height of the statusbar
+	o.size.height = SBHEIGHT;
+	return o;
 }
 
 %end
@@ -119,6 +212,19 @@ static NSDictionary *preferences = nil;
 - (void)tb_setTitleLabel:(UILabel *)label;
 - (void)tb_setSecondaryLabel:(UILabel *)label;
 
+- (void)tb_createLabelsIfNecessary;
+- (NSAttributedString *)tb_addFont:(NSString *)font toString:(NSAttributedString *)string;
+
+- (void)_cancelBannerDismissTimers;
+- (void)_setUpBannerDismissTimers;
+- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+
+- (BOOL)tb_didSchedule;
+- (void)tb_setDidSchedule:(BOOL)value;
+
+
+- (void)tb_replaceIntervalElapsed;
+- (void)tb_dismissIntervalElapsed;
 @end
 
 %hook SBBannerContextView
@@ -128,6 +234,10 @@ static NSDictionary *preferences = nil;
 		%orig(UIEdgeInsetsZero);
 	else
 		%orig;
+}
+
+- (void)noteDidAppear {
+	%orig;	
 }
 
 - (CGRect)_contentFrame {
@@ -143,13 +253,67 @@ static NSDictionary *preferences = nil;
 	return CGRectInset([(UIView *)self bounds], PADDING, 0);
 }
 
+// iOS 8+
+- (CGRect)_centeredBounds {
+	CGRect o = %orig;
+	if (!ENABLED || !STRETCH_BANNER)
+		return o;
+	
+	if (o.size.width == 0 || o.size.height == 0)
+		return o;
+	
+	return CGRectInset([(UIView *)self bounds], PADDING, 0);
+}
+
+- (double)_grabberAlpha {
+	return ENABLED ? 0.0 : %orig;
+}
+
+- (double)minimumHeight {
+	return ENABLED ? SBHEIGHT : %orig;
+}
+
 %end
 
 %hook SBDefaultBannerTextView
+
+%new
+- (void)tb_createLabelsIfNecessary {
+	UILabel *primary = [self tb_titleLabel];
+	if (!primary) {
+		primary = [[[UILabel alloc] initWithFrame: CGRectMake(0, 0, 20, ((UIView *)self).bounds.size.height)] autorelease];
+		[self tb_setTitleLabel: primary];
+	}
+
+	// Create and cache the secondary text label
+	MarqueeLabel *secondary = [self tb_secondaryLabel];
+	
+	if (!secondary) {
+		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, ((UIView *)self).bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
+		[secondary setAnimationDelay: 0.2];
+		[secondary setContinuousMarqueeExtraBuffer: 14.0];
+		[secondary setAnimationCurve: UIViewAnimationOptionCurveLinear];
+		// loop scrolling
+		[secondary setMarqueeType: MLContinuous];
+		[self tb_setSecondaryLabel: secondary];
+	}
+}
+
+%new
+- (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string {
+	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
+		NSMutableAttributedString *mut = [string.mutableCopy autorelease];
+		[mut addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mut.length)];
+		return mut;
+	}
+	
+	return string;
+}
+
 - (void)layoutSubviews {
 	%orig;
-
-	// Remove date label on iOS7.1
+	
+	// Remove date label on iOS7.1+
 	Ivar labelVar = class_getInstanceVariable([self class], "_relevanceDateLabel");
 	if (labelVar != NULL) {
 		UILabel *dateLabel = object_getIvar(self, labelVar);
@@ -165,25 +329,14 @@ static NSDictionary *preferences = nil;
 	}
 	CGRect bounds = [(UIView *)self bounds];
 
-	// Create and cache a primary text label
-	UILabel *primary = [self tb_titleLabel];
-	if (!primary) {
-		primary = [[[UILabel alloc] initWithFrame: CGRectMake(0, 0, 20, bounds.size.height)] autorelease];
-		[self tb_setTitleLabel: primary];
-	}
 
+	// Create and cache a primary text label
+	[self tb_createLabelsIfNecessary];
+	UILabel *primary = [self tb_titleLabel];
+	
 	// Create and cache the secondary text label
 	MarqueeLabel *secondary = [self tb_secondaryLabel];
-
-	if (!secondary) {
-		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
-		[secondary setAnimationDelay: 0.2];
-		[secondary setContinuousMarqueeExtraBuffer: 14.0];
-		[secondary setAnimationCurve: UIViewAnimationOptionCurveLinear];
-		// loop scrolling
-		[secondary setMarqueeType: MLContinuous];
-		[self tb_setSecondaryLabel: secondary];
-	}
+	
 	secondary.rate = SCROLL_SPEED;
 
 	if (!ENABLED) {
@@ -195,22 +348,10 @@ static NSDictionary *preferences = nil;
 	// get our strings from ivars
 	NSAttributedString *primaryString = MSHookIvar<NSAttributedString *>(self, "_primaryTextAttributedStringComponent");
 	NSAttributedString *secondaryString = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
-	// UIImage *image = MSHookIvar<UIImage *>(self, "_primaryTextAccessoryImageComponent");
 
 	// Format Fonts
-	NSString *fontName = FONT;
-	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
-		NSMutableAttributedString *mutPrimary = [primaryString.mutableCopy autorelease];
-		[mutPrimary addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mutPrimary.length)];
-		primaryString = mutPrimary;
-	}
-
-	fontName = MESSAGEFONT;
-	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
-		NSMutableAttributedString *mutSecondary = [secondaryString.mutableCopy autorelease];
-		[mutSecondary addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mutSecondary.length)];
-		secondaryString = mutSecondary;
-	}
+	primaryString = [self tb_addFont: FONT toString: primaryString];
+	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString];
 
 	NSString *strRep = secondaryString.string;
 	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
@@ -221,6 +362,7 @@ static NSDictionary *preferences = nil;
 	// find the sizes of our text
 	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
 	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
+
 	[primary setAttributedText: primaryString];
 
 	// vertically center the title
@@ -239,7 +381,7 @@ static NSDictionary *preferences = nil;
 
 
 	// make the secondary text fille the rest of the view and vertically center it
-	// secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
+	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width;
 	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
 
@@ -254,37 +396,30 @@ static NSDictionary *preferences = nil;
 	[secondary setAttributedText: secondaryString];
 	
 	// Align secondary baseline to the title
-	CGFloat scale = [UIScreen mainScreen].scale;
 	CGFloat primaryBaseline = CGRectGetMaxY(primaryRect) + primary.font.descender;
 	CGFloat secondaryBaseline = CGRectGetHeight(secondaryRect) + secondary.font.descender;
-	secondaryRect.origin.y = ceil((primaryBaseline - secondaryBaseline) * scale) / scale;
+	secondaryRect.origin.y = ceil((primaryBaseline - secondaryBaseline));
 
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
 
-	// Make the banner persist at least as long as the user says or enough for one scroll around
+	
+	//	Make the banner persist at least as long as the user says or enough for one scroll around
 	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
-	CGFloat replaceDuration = (DURATION_LONG / DEFAULT_DURATION) * 4.0;
 	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
-
+	CGFloat replaceDuration = (dismissDuration / DEFAULT_DURATION) * 2.375;
+	
 	if (animationDuration > replaceDuration && SCROLLTOEND && animationDuration > secondary.animationDelay) {
 		replaceDuration = animationDuration;
-
+		
 		if (animationDuration > DURATION_LONG) {
 			dismissDuration = animationDuration;
 		}
 	}
-
-	id ctrl = [%c(SBBannerController) ?: %c(SBBulletinBannerController) sharedInstance];
-	NSArray *modes = @[NSRunLoopCommonModes];
-	
-	[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_replaceIntervalElapsed) object:nil];
-	[ctrl performSelector:@selector(_replaceIntervalElapsed) withObject:nil afterDelay:replaceDuration inModes:modes];
-
-	if (!STICKY) {
-		[NSObject cancelPreviousPerformRequestsWithTarget:ctrl selector:@selector(_dismissIntervalElapsed) object:nil];
-		[ctrl performSelector:@selector(_dismissIntervalElapsed) withObject:nil afterDelay:dismissDuration inModes:modes];
-	}
+		
+	_dismissInterval = dismissDuration;
+	_replaceInterval = replaceDuration;
+	TLog(@"1");
 }
 
 - (void)drawRect:(CGRect)arg1 {
@@ -293,11 +428,21 @@ static NSDictionary *preferences = nil;
 		%orig(arg1);
 }
 
--(void)setSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2 {
+- (void)setSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2 {
 	if (ENABLED)
 		%orig([arg1 stringByReplacingOccurrencesOfString: @"\n" withString: @" "], arg2);
 	else
 		%orig;
+}
+
+%new
+- (BOOL)tb_didSchedule {
+	return [objc_getAssociatedObject(self, @selector(tb_didSchedule)) boolValue];
+}
+
+%new
+- (void)tb_setDidSchedule:(BOOL)value {
+	objc_setAssociatedObject(self, @selector(tb_didSchedule), @(value), OBJC_ASSOCIATION_RETAIN);
 }
 
 %new
@@ -338,12 +483,7 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 									CFDictionaryRef userInfo) {
 
 	TLog(@"Preferences changed!");
-	if (preferences) {
-		[preferences release];
-		preferences = nil;
-	}
-
-	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
+	reloadPreferences();
 
 	// Show a test notification
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
@@ -356,19 +496,29 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
   
-    id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-	[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
-    [ctrl observer:nil addBulletin:request forFeed:2];
-    [[%c(SBBannerController) sharedInstance] _replaceIntervalElapsed];
+	id bctrl = [%c(SBBannerController) sharedInstance];
+	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+
+	if ([bctrl respondsToSelector:@selector(_cancelBannerDismissTimers)]) {
+		[bctrl _cancelBannerDismissTimers];
+	}
+	
+	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_replaceIntervalElapsed) object:nil];
+	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(tb_dismissIntervalElapsed) object:nil];
+	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
+	// [NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
+
+    // Hide previous banner
+    [bctrl _replaceIntervalElapsed];
+ 	[bctrl _dismissIntervalElapsed];
+    
+    [ctrl observer:nil addBulletin:request forFeed:2];    
 }
 
 %ctor {
 	TLog(@"Initialized");
-
-	preferences = [[NSDictionary dictionaryWithContentsOfFile: PREFS_PATH] retain];
-	if (!preferences) {
-		preferences = DEFAULT_PREFS;
-	}
+	
+	reloadPreferences();
 
 	CFNotificationCenterRef center = CFNotificationCenterGetDarwinNotifyCenter();
 	CFNotificationCenterAddObserver(center, NULL, &prefsChanged, (CFStringRef)@"com.alexzielenski.tinybar/prefsChanged", NULL, 0);

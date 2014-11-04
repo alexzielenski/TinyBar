@@ -1,6 +1,7 @@
 #define TLog(format, ...) NSLog(@"TinyBar: %@", [NSString stringWithFormat: format, ## __VA_ARGS__])
 
-#define PREFS_PATH [NSString stringWithFormat:@"%@/Library/Preferences/com.alexzielenski.tinybar.plist", NSHomeDirectory()]
+#define APPID @"com.alexzielenski.tinybar"
+#define PREFS_PATH [NSString stringWithFormat:@"%@/Library/Preferences/%@.plist", NSHomeDirectory(), APPID]
 #define DEFAULT_DURATION 6.375
 #define DEFAULT_DURATION_LONG 10.375
 #define DEFAULT_SPEED 85.0

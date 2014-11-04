@@ -1,17 +1,4 @@
-// Copyright (c) 2011-2013 Charles Powell
 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-// documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
-// the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-// to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-// TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-// CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
 //
 //  MarqueeLabel.h
 //  
@@ -37,7 +24,6 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  */
 
 @interface MarqueeLabel : UILabel
-@property (nonatomic, readonly) NSTimeInterval animationDuration;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name Creating MarqueeLabels
@@ -46,18 +32,18 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 /** Returns a newly initialized `MarqueeLabel` instance.
 
  The default scroll duration of 7.0 seconds and fade length of 0.0 are used.
- 
+
  @param frame A rectangle specifying the initial location and size of the view in its superview's coordinates. Text (for the given font, font size, etc.) that does not fit in this frame will automatically scroll.
  @return An initialized `MarqueeLabel` object or nil if the object couldn't be created.
 */
 
-- (id)initWithFrame:(CGRect)frame;
+- (instancetype)initWithFrame:(CGRect)frame;
 
 
 /** Returns a newly initialized `MarqueeLabel` instance with the specified scroll rate and edge transparency fade length.
- 
+
  You must specify a non-zero rate, and you cannot thereafter modify the rate.
- 
+
  @param frame A rectangle specifying the initial location and size of the view in its superview's coordinates. Text (for the given font, font size, etc.) that does not fit in this frame will automatically scroll.
  @param pixelsPerSec A rate of scroll for the label scroll animation. Must be non-zero. Note that this will be the maximum rate for ease-type animation.
  @param fadeLength A length of transparency fade at the left and right edges of the `MarqueeLabel` instance's frame.
@@ -65,13 +51,13 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  @return An initialized `MarqueeLabel` object or nil if the object couldn't be created.
  */
 
-- (id)initWithFrame:(CGRect)frame rate:(CGFloat)pixelsPerSec andFadeLength:(CGFloat)fadeLength;
+- (instancetype)initWithFrame:(CGRect)frame rate:(CGFloat)pixelsPerSec andFadeLength:(CGFloat)fadeLength;
 
 
 /** Returns a newly initialized `MarqueeLabel` instance with the specified scroll duration and edge transparency fade length.
- 
+
  You must specify a non-zero duration, and you cannot thereafter modify the duration.
- 
+
  @param frame A rectangle specifying the initial location and size of the view in its superview's coordinates. Text (for the given font, font size, etc.) that does not fit in this frame will automatically scroll.
  @param scrollDuration A scroll duration the label scroll animation. Must be non-zero. This will be the duration that the animation takes for one-half of the scroll cycle in the case of left-right and right-left marquee types, and for one loop of a continuous marquee type.
  @param fadeLength A length of transparency fade at the left and right edges of the `MarqueeLabel` instance's frame.
@@ -79,13 +65,13 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
  @return An initialized `MarqueeLabel` object or nil if the object couldn't be created.
  */
 
-- (id)initWithFrame:(CGRect)frame duration:(NSTimeInterval)scrollDuration andFadeLength:(CGFloat)fadeLength;
+- (instancetype)initWithFrame:(CGRect)frame duration:(NSTimeInterval)scrollDuration andFadeLength:(CGFloat)fadeLength;
 
 
 /** Resizes the view to the minimum size necessary to fully enclose the current text (i.e. without scrolling), up to the maximum size specified.
- 
+
  The current origin of the frame is retained.
- 
+
  @param maxSize The maximum size up to which the view should be resized. Passing `CGSizeZero` will result in no maximum size limit.
  @param adjustHeight A boolean that can be used to indicate if the view's height should also be adjusted. Note that this has no impact on scrolling.
  */
@@ -97,14 +83,14 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Specifies the animation curve used in the scrolling motion of the labels.
- 
+
  Allowable options:
- 
+
     - `UIViewAnimationOptionCurveEaseInOut`
     - `UIViewAnimationOptionCurveEaseIn`
     - `UIViewAnimationOptionCurveEaseOut`
     - `UIViewAnimationOptionCurveLinear`
- 
+
  Defaults to `UIViewAnimationOptionCurveEaseInOut`.
  */
 
@@ -112,15 +98,16 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** A boolean property that sets whether the `MarqueeLabel` should behave like a normal UILabel.
- 
+
  When set to `YES` the `MarqueeLabel` will behave like a normal UILabel, and  will not begin scrolling when the text is
- larger than the specified frame. The change takes effect immediately. Note that the `MarqueeLabel` will respect the
- setting of the UILabel `lineBreakMode` and `textAlignment` properties while labelized.
- 
+ larger than the specified frame. The change takes effect immediately, removing any in-flight animation as well as any
+ current edge fade. Note that the `MarqueeLabel` will respect the current values of the `lineBreakMode` and `textAlignment` 
+ properties while labelized.
+
  To simply prevent automatic scrolling, use the `holdScrolling` property.
- 
+
  Defaults to `NO`.
- 
+
  @see holdScrolling
  @see lineBreakMode
  @warning The label will not automatically scroll when this property is set to `YES`.
@@ -130,49 +117,92 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 @property (nonatomic, assign) BOOL labelize;
 
 
-/** A boolean property that sets whether the `MarqueeLabel` should hold (prevent) label scrolling
- 
- When set to `YES`, the `MarqueeLabel` will not automatically scroll when its text is larger than the specified frame.
- Note that edge fades will be not be disabled when this property is set to `YES`.
- 
+/** A boolean property that sets whether the `MarqueeLabel` should hold (prevent) label scrolling.
+
+ When set to `YES`, the `MarqueeLabel` will not automatically scroll even its text is larger than the specified frame, 
+ although the specified edge fades will remain.
+
  To set the `MarqueeLabel` to act like a normal UILabel, use the `labelize` property.
- 
- Defaults to `NO` .
- 
+
+ Defaults to `NO`.
+
  @see labelize
  @warning The label will not automatically scroll when this property is set to `YES`.
  */
 
 @property (nonatomic, assign) BOOL holdScrolling;
-@property (nonatomic, assign) CGFloat rate;
+
+
+/** A boolean property that sets whether the `MarqueeLabel` should only begin a scroll when tapped.
+
+ If this property is set to `YES`, the `MarqueeLabel` will begin a scroll animation cycle only when tapped. The label will
+ not automatically being a scroll. This setting overrides the setting of the `holdScrolling` property.
+
+ Defaults to `NO` .
+
+ @warning The label will not automatically scroll when this property is set to `YES`.
+ @see holdScrolling
+ */
+
+@property (nonatomic, assign) BOOL tapToScroll;
+
 
 /** Defines the direction and method in which the `MarqueeLabel` instance scrolls.
- 
+
  `MarqueeLabel` supports four types of scrolling: `MLLeftRight`, `MLRightLeft`, `MLContinuous`, and `MLContinuousReverse`.
- 
+
  Given the nature of how text direction works, the options for the `marqueeType` property require specific text alignments
  and will set the textAlignment property accordingly.
- 
+
  - `MLLeftRight` type is ONLY compatible with a label text alignment of `NSTextAlignmentLeft`.
  - `MLRightLeft` type is ONLY compatible with a label text alignment of `NSTextAlignmentRight`.
  - `MLContinuous` does not require a text alignment (it is effectively centered).
  - `MLContinuousReverse` does not require a text alignment (it is effectively centered).
- 
+
  Defaults to `MLLeftRight`.
- 
+
  @see MarqueeType
  @see textAlignment
  */
 
+
 @property (nonatomic, assign) MarqueeType marqueeType;
 
 
+/** Defines the duration of the scrolling animation.
+
+ This property sets the amount of time it will take for the scrolling animation to complete a
+ scrolling cycle. Note that for `MLLeftRight` and `MLRightLeft`, a cycle consists of the animation away,
+ a pause (if a delay is specified), and the animation back to the original position.
+
+ Setting this property will automatically override any value previously set to the `rate` property, and the `rate`
+ property will be set to `0.0`.
+
+ @see rate
+ */
+
+@property (nonatomic, assign) NSTimeInterval scrollDuration;
+@property (nonatomic, assign) NSTimeInterval animationDuration;
+
+
+/** Defines the rate at which the label will scroll, in pixels per second.
+
+ Setting this property will automatically override any value previousy set to the `scrollDuration` property, and the
+ `scrollDuration` property will be set to `0.0`. Note that this is the rate at which the label would scroll if it
+ moved at a constant speed - with other animation curves the rate will be slightly different.
+
+ @see scrollDuration
+ */
+
+@property (nonatomic, assign) CGFloat rate;
+
+
 /** The additional amount of space (in points) inbetween the strings of a continuous-type label.
- 
+
  The minimum spacing is two times the specified fade length.
- 
+
  Defaults to `0`.
- 
+
  @see fadeLength
  */
 
@@ -180,11 +210,11 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** The length of transparency fade at the left and right edges of the `MarqueeLabel` instance's frame.
- 
+
  This propery sets the size (in points) of the view edge transparency fades on the left and right edges of a `MarqueeLabel`. The
  transparency fades from an alpha of 1.0 (fully visible) to 0.0 (fully transparent) over this distance. Values set to this property
  will be sanitized to prevent a fade length greater than 1/2 of the frame width.
- 
+
  Defaults to `0`.
  */
 
@@ -196,26 +226,15 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 @property (nonatomic, assign) CGFloat animationDelay;
 
 
-/** A boolean property that sets whether the `MarqueeLabel` should only begin a scroll when tapped.
- 
- If this property is set to `YES`, the `MarqueeLabel` will begin a scroll animation cycle only when tapped. The label will
- not automatically being a scroll.
- 
- Defaults to `NO` .
- 
- @warning The label will not automatically scroll when this property is set to `YES`.
- */
-@property (nonatomic, assign) BOOL tapToScroll;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name Animation control
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Restarts the label text scroll animation.
- 
+
  The text is immediately returned to the home position, and the scroll animation will be begin again if the appropriate conditions are met.
- 
+
  @see resetLabel
  */
 
@@ -223,11 +242,11 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Resets the label text, recalculating the scroll animation.
- 
+
  The text is immediately returned to the home position, and the scroll animation positions are cleared. Scrolling will not resume automatically after
  a call to this method. To re-initiate scrolling, use either a call to `restartLabel` or make a change to a UILabel property such as text, bounds/frame,
  font, font size, etc.
- 
+
  @see restartLabel
  */
 
@@ -235,26 +254,54 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Pauses the text scrolling animation, at any point during the animation.
- 
+
  @see unpauseLabel
  */
 
 - (void)pauseLabel;
 
+
 /** Un-pauses a previously paused text scrolling animation
- 
+
  @see pauseLabel
  */
 
 - (void)unpauseLabel;
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
-/// @name Label States
+/// @name Animation Status
 ////////////////////////////////////////////////////////////////////////////////
 
+/** Called when the label animation is about to begin.
+
+ The default implementation of this method does nothing. Subclasses may override this method in order to perform any custom actions before
+ the label animation begins. This is only called in the event that the conditions for scrolling to begin are met.
+
+ @since Available in 1.5.0 and later.
+ */
+
+- (void)labelWillBeginScroll;
+
+
+/** Called when the label animation has finished, and the label is at the home position.
+
+ The default implementation of this method does nothing. Subclasses may override this method in order to perform any custom actions after
+ the label animation is complete, and before the next animation would begin (assuming the conditions are met).
+
+ @param finished A Boolean that indicates whether or not the scroll animation actually finished before the completion handler was called.
+ @since Available in 1.5.0 and later.
+
+ @warning This method will be called, and the `finished` parameter will be `NO`, when any property changes are made that would cause the label 
+ scrolling to be automatically reset. This includes changes to label text and font/font size changes.
+ */
+
+- (void)labelReturnedToHome:(BOOL)finished;
+
+
 /** A boolean property that indicates if the label's scroll animation has been paused.
- 
+
  @see pauseLabel
  @see unpauseLabel
  */
@@ -263,9 +310,8 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** A boolean property that indicates if the label is currently away from the home location.
- 
- The home location is approximately the traditional location of `UILabel` text. This property essentially
- reflects if a scroll animation is underway.
+
+ The "home" location is the traditional location of `UILabel` text. This property essentially reflects if a scroll animation is underway.
  */
 
 @property (nonatomic, assign, readonly) BOOL awayFromHome;
@@ -277,20 +323,20 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Convenience method to restart all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  This method sends a `NSNotification` to all `MarqueeLabel` instances with the specified view controller in their next responder chain.
  The scrolling animation of these instances will be automatically restarted. This is equivalent to calling `restartLabel` on all affected
  instances.
- 
+
  There is currently no functional difference between this method and `controllerViewDidAppear:` or `controllerViewWillAppear:`. The methods may 
  be used interchangeably.
- 
+
  @warning View controllers that appear with animation (such as from underneath a modal-style controller) can cause some `MarqueeLabel` text
  position "jumping" when this method is used in `viewDidAppear` if scroll animations are already underway. Use this method inside `viewWillAppear:`
  instead to avoid this problem.
- 
+
  @warning This method may not function properly if passed the parent view controller when using view controller containment.
- 
+
  @param controller The view controller that has appeared.
  @see restartLabel
  @see controllerViewDidAppear:
@@ -302,9 +348,9 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Convenience method to restart all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  Alternative to `restartLabelsOfController:`. This method is retained for backwards compatibility and future enhancements.
- 
+
  @param controller The view controller that has appeared.
  @see restartLabel
  @see controllerViewWillAppear:
@@ -315,9 +361,9 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Convenience method to restart all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  Alternative to `restartLabelsOfController:`. This method is retained for backwards compatibility and future enhancements.
- 
+
  @param controller The view controller that has appeared.
  @see restartLabel
  @see controllerViewDidAppear:
@@ -328,11 +374,11 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Restarts all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  This method is intended to be placed in the `viewDidAppear:` method of view controllers, and sends an `NSNotification`
  to all `MarqueeLabel` instances with the specified view controller in their next responder chain. These instances
  will be automatically restarted.
- 
+
  @param controller The view controller that has appeared.
  @see restartLabel
  @deprecated Use `controllerViewDidAppear:` instead.
@@ -342,10 +388,10 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** Labelizes all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  This method sends an `NSNotification` to all `MarqueeLabel` instances with the specified view controller in their next
  responder chain. The `labelize` property of these `MarqueeLabel` instances will be set to `YES`.
- 
+
  @param controller The view controller for which all `MarqueeLabel` instances should be labelized.
  @see labelize
  */
@@ -354,10 +400,10 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 
 
 /** De-Labelizes all `MarqueeLabel` instances that have the specified view controller in their next responder chain.
- 
+
  This method sends an `NSNotification` to all `MarqueeLabel` instances with the specified view controller in their next
  responder chain. The `labelize` property of these `MarqueeLabel` instances will be set to `NO` .
- 
+
  @param controller The view controller for which all `MarqueeLabel` instances should be de-labelized.
  @see labelize
  */
@@ -365,7 +411,5 @@ typedef NS_ENUM(NSUInteger, MarqueeType) {
 + (void)controllerLabelsShouldAnimate:(UIViewController *)controller;
 
 
-
 @end
-
 

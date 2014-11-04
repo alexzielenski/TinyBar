@@ -1,8 +1,5 @@
 include theos/makefiles/common.mk
 
-ARCHS  := armv7 armv7s arm64
-TARGET := iphone:7.0:7.0
-
 TWEAK_NAME = TinyBar
 TinyBar_FILES = Tweak.xm
 TinyBar_FRAMEWORKS = UIKit CoreGraphics QuartzCore
