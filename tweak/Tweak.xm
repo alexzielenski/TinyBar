@@ -135,7 +135,11 @@ static void reloadPreferences() {
 	// and make it fill the rest of the view
 	CGRect textFrame = textView.frame;
 	textFrame.size.height = bounds.size.height;
-	textFrame.origin.x = imageFrame.origin.x + imageFrame.size.width + PADDING;
+	textFrame.origin.x = imageFrame.origin.x + imageFrame.size.width;
+	
+	if (SHOWICON)
+		textFrame.origin.x += PADDING;
+		
 	textFrame.origin.y = 0;
 	textFrame.size.width = bounds.size.width - textFrame.origin.x;
 	[textView setFrame: textFrame];
