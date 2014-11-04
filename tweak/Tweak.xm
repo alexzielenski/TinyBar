@@ -403,7 +403,7 @@ static void reloadPreferences() {
 
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
-	secondaryRect.origin.x   += primaryRect.size.width;
+	secondaryRect.origin.x   += primaryRect.size.width + PADDING;
 	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
 
 	if (rtl) {
