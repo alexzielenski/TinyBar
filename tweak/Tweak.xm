@@ -245,16 +245,20 @@ static void reloadPreferences() {
 	return CGRectInset([(UIView *)self bounds], PADDING, 0);
 }
 
-// iOS 8+
+// iOS 8+ to add padding
 - (CGRect)_centeredBounds {
-	CGRect o = %orig;
-	if (!ENABLED || !STRETCH_BANNER)
-		return o;
-	
-	if (o.size.width == 0 || o.size.height == 0)
-		return o;
-	
-	return CGRectInset([(UIView *)self bounds], PADDING, 0);
+    CGRect o = %orig;
+    if (!ENABLED || !STRETCH_BANNER)
+        return o;
+    
+    if (o.size.width == 0 || o.size.height == 0)
+        return o;
+    
+    CGRect bounds = [(UIView *)self bounds];
+    bounds.origin.x += PADDING;
+    bounds.size.width -= PADDING * 2;
+    
+    return bounds;
 }
 
 - (double)_grabberAlpha {
