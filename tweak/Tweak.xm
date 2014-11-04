@@ -54,19 +54,7 @@ static BOOL _pulledDown = NO;
 
 - (void)_cancelBannerDismissTimers;
 - (void)_setUpBannerDismissTimers;
-- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 
-- (BOOL)tb_didSchedule;
-- (void)tb_setDidSchedule:(BOOL)value;
-
-
-- (void)tb_replaceIntervalElapsed;
-- (void)tb_dismissIntervalElapsed;
-
-- (void)tb_scheduleTimers;
-- (void)tb_cancelTimers;
-- (void)_dismissIntervalElapsed;
-- (void)_replaceIntervalElapsed;
 @end
 
 static void reloadPreferences() {
@@ -226,10 +214,6 @@ static void reloadPreferences() {
 		%orig(UIEdgeInsetsZero);
 	else
 		%orig;
-}
-
-- (void)noteDidAppear {
-	%orig;	
 }
 
 - (CGRect)_contentFrame {
@@ -418,12 +402,6 @@ static void reloadPreferences() {
 	
 	
 	id bctrl = [%c(SBBannerController) sharedInstance];
-	
-	// Scheduling for iOS 7
-	if (!IS_IOS_8_PLUS()) {
-		[bctrl tb_cancelTimers];
-		[bctrl tb_scheduleTimers];
-	}
 	
 	TLog(@"1");
 }
