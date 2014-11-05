@@ -445,7 +445,18 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	}
 		
 	_dismissInterval = dismissDuration;
-	_replaceInterval = replaceDuration;	
+	_replaceInterval = replaceDuration;
+
+	if (!IS_IOS_8_PLUS()) {
+		// The dismiss scheduling is run after this method is called
+		// so it always uses intervals from the previous banner. Cancel/Reapply them
+		id bctrl = [%c(SBBannerController) sharedInstance];
+		[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object: nil];
+		[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object: nil];
+		
+		[bctrl performSelector: @selector(_replaceIntervalElapsed) withObject: nil afterDelay: _replaceInterval];
+		[bctrl performSelector: @selector(_dismissIntervalElapsed) withObject: nil afterDelay: _dismissInterval];
+	}
 }
 
 - (void)drawRect:(CGRect)arg1 {
