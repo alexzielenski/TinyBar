@@ -395,7 +395,6 @@ static void showTestBanner() {
 	
 	secondary.rate = SCROLL_SPEED;
 	secondary.animationDelay = DELAY;
-
 	if (!ENABLED || _pulledDown) {
 		[primary removeFromSuperview];
 		[secondary removeFromSuperview];
@@ -469,9 +468,15 @@ static void showTestBanner() {
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
 	
+	secondary.fadeLength = PADDING;
+	if (secondary.animationDuration == 0) {
+		secondary.fadeLength = 0.0;
+	}
+	
+	
 	//	Make the banner persist at least as long as the user says or enough for one scroll around
 	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
-	CGFloat dismissDuration = animationDuration > 0 ? DURATION_LONG : DURATION;
+	CGFloat dismissDuration = secondary.animationDuration > 0.0 ? DURATION_LONG : DURATION;
 	CGFloat replaceDuration = (dismissDuration / DEFAULT_DURATION) * 2.375;
 	
 	if (animationDuration > replaceDuration && SCROLLTOEND && animationDuration > secondary.animationDelay) {
