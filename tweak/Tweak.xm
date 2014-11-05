@@ -104,6 +104,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 
 	if (!ENABLED || _pulledDown) {
 		attachment.alpha = 1.0;
+		imageView.alpha = 1.0;
 		grabberView.alpha = 1.0;
 		return;
 	}
