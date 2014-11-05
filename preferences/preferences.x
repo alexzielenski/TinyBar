@@ -28,6 +28,8 @@
 }
 
 - (void)resetDefaults:(PSSpecifier *)spec {
+//!TODO: Does not reset blacklist
+
 	[[NSFileManager defaultManager] removeItemAtURL: [NSURL fileURLWithPath: PREFS_PATH] error: nil];
 	[self setPreferenceValue: @DEFAULT_HEIGHT specifier: [self specifierForID: PREFS_HEIGHT_KEY]];
 	[self setPreferenceValue: @DEFAULT_SPEED specifier: [self specifierForID: PREFS_SPEED_KEY]];
@@ -39,6 +41,9 @@
 	[self setPreferenceValue: @DEFAULT_DURATION_LONG specifier: [self specifierForID: PREFS_DURATION_LONG_KEY]];
 	[self setPreferenceValue: @DEFAULT_STRETCH_BANNER specifier: [self specifierForID: PREFS_STRETCH_BANNER_KEY]];
 	[self setPreferenceValue: @DEFAULT_STICKY specifier: [self specifierForID: PREFS_STICKY_KEY]];
+	[self setPreferenceValue: @DEFAULT_DELAY specifief: [self specifierForID: PREFS_DELAY_KEY]];
+	[self setPreferenceValue: DEFAULT_FONT specifier: [self specifierForID: PREFS_FONT_KEY]];
+	[self setPreferenceValue: DEFAULT_FONT specifier: [self specifierForID: PREFS_MESSAGEFONT_KEY]];
 	[self reloadSpecifiers];
 	
 	CFNotificationCenterRef r = CFNotificationCenterGetDarwinNotifyCenter();
