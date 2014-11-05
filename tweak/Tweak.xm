@@ -220,7 +220,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	_pulledDown = NO;
 	
 	id bulletin = [self valueForKeyPath: @"_bannerContext.item.seedBulletin"];
-	if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown] || [self showsKeyboard]) {
+	if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown]) {
 		TLog(@"blacklisted");
 		_pulledDown = YES;
 	}
