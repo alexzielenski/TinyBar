@@ -411,17 +411,19 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	}
 
 	// find the sizes of our text
-	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesFontLeading context:nil];
-	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesFontLeading context:nil];
+	CGRect primaryRect   = CGRectMake(0, 0, primaryString.size.width, primaryString.size.height);
+	CGRect secondaryRect = CGRectMake(0, 0, secondaryString.size.width, secondaryString.size.height);
 
 	//! Calculate vertical position of title baseline
 	// Center primary text
+	// baseline = primaryBase + primary.font.ascender
+	// secondaryBase = baseline - secondary.font.ascender
 	CGFloat primaryBase = bounds.size.height / 2 - primaryRect.size.height / 2;
-	// Align the secondary text baselinet to the primary
+	// Align the secondary text baseline to the primary
 	CGFloat secondaryBase = primaryBase + (primary.font.ascender - secondary.font.ascender);
 
-	primaryRect.origin.y = primaryBase;
-	secondaryRect.origin.y = secondaryBase;
+	primaryRect.origin.y = ceil(primaryBase);
+	secondaryRect.origin.y = ceil(secondaryBase);
 
 	// Move the title to the right side of we are reading right-to-left
 	if (rtl) {
