@@ -17,6 +17,7 @@
 #define DURATION_LONG (CGFloat)([preferences objectForKey: PREFS_DURATION_LONG_KEY] ? [[preferences objectForKey: PREFS_DURATION_LONG_KEY] doubleValue] : DEFAULT_DURATION_LONG)
 #define STRETCH_BANNER ([preferences objectForKey: PREFS_STRETCH_BANNER_KEY] ? [[preferences objectForKey: PREFS_STRETCH_BANNER_KEY] boolValue] : DEFAULT_STRETCH_BANNER)
 #define STICKY ([preferences objectForKey: PREFS_STICKY_KEY] ? [[preferences objectForKey: PREFS_STICKY_KEY] boolValue] : DEFAULT_STICKY)
+#define DELAY (CGFloat)([preferences objectForKey: PREFS_DELAY_KEY] ? [[preferences objectForKey: PREFS_DELAY_KEY] doubleValue] : DEFAULT_DELAY)
 #define FONT [preferences objectForKey: PREFS_FONT_KEY]
 #define MESSAGEFONT [preferences objectForKey: PREFS_MESSAGEFONT_KEY]
 
@@ -308,7 +309,6 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	
 	if (!secondary) {
 		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, ((UIView *)self).bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
-		[secondary setAnimationDelay: 0.2];
 		[secondary setContinuousMarqueeExtraBuffer: 14.0];
 		[secondary setAnimationCurve: UIViewAnimationOptionCurveLinear];
 		// loop scrolling
@@ -357,6 +357,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	MarqueeLabel *secondary = [self tb_secondaryLabel];
 	
 	secondary.rate = SCROLL_SPEED;
+	secondary.animationDelay = DELAY;
 
 	if (!ENABLED || _pulledDown) {
 		[primary removeFromSuperview];
@@ -370,10 +371,10 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	NSAttributedString *secondaryString = nil;
 	NSString *secondaryText = [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
 	if (IS_IOS_8_PLUS()) {
-		secondaryString = [self _newAttributedStringForSecondaryText: secondaryText
-														 italicized: [self _isItalicizedAttributedString: secondaryAtr]];
+		secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
+														 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
 	} else {
-		secondaryString = [[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]];
+		secondaryString = [[[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]] autorelease];
 	}
 
 	// Format Fonts
@@ -405,7 +406,6 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 		[primary setFrame: primaryRect];
 		[self addSubview: primary];
 	}
-
 
 	// make the secondary text fille the rest of the view and vertically center it
 	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
@@ -444,10 +444,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	}
 		
 	_dismissInterval = dismissDuration;
-	_replaceInterval = replaceDuration;
-	
-	
-	id bctrl = [%c(SBBannerController) sharedInstance];	
+	_replaceInterval = replaceDuration;	
 }
 
 - (void)drawRect:(CGRect)arg1 {
