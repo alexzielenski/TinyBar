@@ -17,14 +17,15 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
-	self.families = [@[@"Default"] arrayByAddingObjectsFromArray: [[UIFont familyNames] sortedArrayUsingSelector: @selector(caseInsensitiveCompare:)]];
+	self.families = [@[DEFAULT_FONT] arrayByAddingObjectsFromArray: [[UIFont familyNames] sortedArrayUsingSelector: @selector(caseInsensitiveCompare:)]];
 
-	// UIBarButtonItem *button = [[[UIBarButtonItem alloc] initWithTitle:@"Test" style:UIBarButtonItemStylePlain target:self action:@selector(testBulletin:)] autorelease];
-  	// self.navigationItem.rightBarButtonItem = button;	
+	UIBarButtonItem *button = [[[UIBarButtonItem alloc] initWithTitle:@"Test" style:UIBarButtonItemStylePlain target:self action:@selector(testBulletin:)] autorelease];
+  	self.navigationItem.rightBarButtonItem = button;	
 }
 
 - (void)testBulletin:(id)sender {
-
+	CFNotificationCenterRef r = CFNotificationCenterGetDarwinNotifyCenter();
+	CFNotificationCenterPostNotification(r, (CFStringRef)@"com.alexzielenski.tinybar/prefsChanged", NULL, NULL, true);
 }
 
 - (void)resetDefaults:(PSSpecifier *)spec {
