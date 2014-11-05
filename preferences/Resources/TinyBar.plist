@@ -370,7 +370,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>TinyBar 0.0.7 © 2014 Alex Zielenski Icon by @andreaslarsendk</string>
+			<string>TinyBar 0.0.8 © 2014 Alex Zielenski Icon by @andreaslarsendk</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
