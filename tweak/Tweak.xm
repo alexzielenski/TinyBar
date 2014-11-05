@@ -52,7 +52,8 @@ static BOOL _pulledDown = NO;
 - (void)tb_setSecondaryLabel:(UILabel *)label;
 
 - (void)tb_createLabelsIfNecessary;
-- (NSAttributedString *)tb_addFont:(NSString *)font toString:(NSAttributedString *)string;
+- (NSAttributedString *)tb_addFont:(NSString *)font toString:(NSAttributedString *)string bounds:(CGRect)bounds;
+- (UIFont *)scaledFont:(UIFont *)font fromSize:(CGSize)size toRect:(CGRect)bounds;
 
 - (void)_cancelBannerDismissTimers;
 - (void)_setUpBannerDismissTimers;
@@ -319,14 +320,25 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 }
 
 %new
-- (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string {
+- (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string bounds:(CGRect)bounds {
 	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
 		NSMutableAttributedString *mut = [string.mutableCopy autorelease];
-		[mut addAttribute: NSFontAttributeName value: [UIFont fontWithName: fontName size: 14.0] range: NSMakeRange(0, mut.length)];
+		UIFont *font = [UIFont fontWithName: fontName size: 14.0];
+		[mut addAttribute: NSFontAttributeName value:font range: NSMakeRange(0, mut.length)];
+		
+		UIFont *newFont = [self scaledFont: font fromSize: mut.size toRect: bounds];
+		[mut addAttribute: NSFontAttributeName value:newFont range: NSMakeRange(0, mut.length)];
 		return mut;
 	}
 	
 	return string;
+}
+
+%new
+- (UIFont *)scaledFont:(UIFont *)font fromSize:(CGSize)size toRect:(CGRect)bounds {
+	CGFloat factor = (bounds.size.height - PADDING) / size.height;
+	
+	return [font fontWithSize: font.pointSize * factor];
 }
 
 - (void)layoutSubviews {
@@ -379,24 +391,41 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	}
 
 	// Format Fonts
-	primaryString = [self tb_addFont: FONT toString: primaryString];
-	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString];
+	primaryString = [self tb_addFont: FONT toString: primaryString bounds: bounds];
+	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString bounds: bounds];
 
 	NSString *strRep = secondaryString.string;
 	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
 	NSLocaleLanguageDirection direction = (NSLocaleLanguageDirection)[%c(NSLocale) characterDirectionForLanguage:isoLangCode];
 
 	BOOL rtl = (direction == NSLocaleLanguageDirectionRightToLeft);
+	
+	[primary setAttributedText: primaryString];
+	[secondary setTextAlignment: (rtl) ? NSTextAlignmentRight : NSTextAlignmentLeft];
+	[secondary setAttributedText: secondaryString];
+	
+	if (rtl) {
+		[secondary setMarqueeType: MLContinuousReverse];
+	} else {
+		[secondary setMarqueeType: MLContinuous];
+	}
 
 	// find the sizes of our text
-	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
-	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
+	CGRect primaryRect   = [primaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesFontLeading context:nil];
+	CGRect secondaryRect = [secondaryString boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, bounds.size.height) options:NSStringDrawingUsesFontLeading context:nil];
 
-	[primary setAttributedText: primaryString];
+	//! Calculate vertical position of title baseline
+	// Center primary text
+	CGFloat primaryBase = bounds.size.height / 2 - primaryRect.size.height / 2;
+	// Align the secondary text baselinet to the primary
+	CGFloat secondaryBase = primaryBase + (primary.font.ascender - secondary.font.ascender);
 
-	// vertically center the title
-	primaryRect.origin.y = floor(bounds.size.height / 2 - primaryRect.size.height / 2);
+	primaryRect.origin.y = primaryBase;
+	secondaryRect.origin.y = secondaryBase;
+
+	// Move the title to the right side of we are reading right-to-left
 	if (rtl) {
+		secondaryRect.origin.x = 0;
 		primaryRect.origin.x = bounds.size.width + bounds.origin.x - primaryRect.size.width;
 	}
 
@@ -409,25 +438,8 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	}
 
 	// make the secondary text fille the rest of the view and vertically center it
-	secondaryRect.origin.y    = floor(bounds.size.height / 2 - secondaryRect.size.height / 2) + 1.0;
 	secondaryRect.origin.x   += primaryRect.size.width + PADDING;
 	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
-
-	if (rtl) {
-		[secondary setMarqueeType: MLContinuousReverse];
-		secondaryRect.origin.x = 0;
-	} else {
-		[secondary setMarqueeType: MLContinuous];
-	}
-
-	[secondary setTextAlignment: (rtl) ? NSTextAlignmentRight : NSTextAlignmentLeft];
-	[secondary setAttributedText: secondaryString];
-	
-	// Align secondary baseline to the title
-	CGFloat primaryBaseline = CGRectGetMaxY(primaryRect) + primary.font.descender;
-	CGFloat secondaryBaseline = CGRectGetHeight(secondaryRect) + secondary.font.descender;
-	secondaryRect.origin.y = ceil((primaryBaseline - secondaryBaseline));
-
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
 	
