@@ -3,6 +3,7 @@
 #import <objc/runtime.h>
 #import "MarqueeLabel.h"
 #import <defines.h>
+#include <mach/mach_time.h>
 
 #define PADDING   4.0
 #define IMAGESIZE 14.0
@@ -67,8 +68,9 @@ static BOOL _pulledDown = NO;
 - (BOOL)isPulledDown;
 - (BOOL)showsKeyboard;
 - (void)_dismissOverdueOrDequeueIfPossible;
+- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 - (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
-- (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+- (id)_bannerContext;
 @end
 
 static void reloadPreferences() {
@@ -542,31 +544,40 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	reloadPreferences();
 
 	id bctrl = [%c(SBBannerController) sharedInstance];
-	
+	// id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+
 	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
 	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
 
     // Hide previous banner
  	if (IS_IOS_8_PLUS()) {
- 		if ([bctrl _bannerContext] && ![[bctrl _bannerView] isDismissing]) {
- 			static BOOL _isDismissing = NO;
- 			dispatch_async(dispatch_get_main_queue(), ^{
- 				if (_isDismissing)
- 					return;
- 				
- 				_isDismissing = YES;
- 				[bctrl _dismissBannerWithAnimation: NO reason: 1 forceEvenIfBusy: NO completion:^() { 				
- 					dispatch_async(dispatch_get_main_queue(), ^{
-						[bctrl _replaceIntervalElapsed];
-						[bctrl _dismissIntervalElapsed];
-						showTestBanner();
-						_isDismissing = NO;
- 					});
- 				}];
- 			});
-		} else {
-			showTestBanner();
-		}
+ 		if (![bctrl _bannerContext]) {
+ 			[bctrl _replaceIntervalElapsed];	
+ 			[bctrl _dismissIntervalElapsed];	
+	 		showTestBanner();
+ 		} else {
+ 			[bctrl _replaceIntervalElapsed];
+ 			[bctrl _dismissIntervalElapsed];
+ 			//! This is the hackiest thing i've seen in my life
+ 			// We need to wait for the bannerContext to go away
+ 			// before we add another banner. I tried messing with
+ 			// completion blocks of the banner controller which 
+ 			// resulted in crashes after rapidly showing test banners
+ 			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+ 				// time out after 2 seconds
+ 				uint64_t start = mach_absolute_time();
+ 				mach_timebase_info_data_t info;
+ 				mach_timebase_info(&info);
+				while([bctrl _bannerContext] && (CGFloat)(mach_absolute_time() - start) * info.numer / info.denom / pow(10, 9) < 2.0) {
+					[[NSRunLoop currentRunLoop] runUntilDate: [NSDate date]];
+				}
+				dispatch_async(dispatch_get_main_queue(), ^() {
+					[bctrl _replaceIntervalElapsed];	
+					showTestBanner();
+				});
+			});			
+ 		}
+
  	} else {
 	 	[bctrl _replaceIntervalElapsed];
 	 	[bctrl _dismissIntervalElapsed];
