@@ -508,7 +508,8 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	// Show a test notification
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
 	[request setTitle: @"TinyBar"];
-	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+	
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && UIDeviceOrientationIsLandscape([[UIDevice currentDevice] orientation]))) {
 		[request setMessage: @"Preferences saved!\nThis is a really really really really really really really really really really really really long test notification to show scrolling."];
 	} else {
 		[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
