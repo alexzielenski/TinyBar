@@ -241,11 +241,12 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	return o;
 }
 
-- (void)_noteDidPullDown {
+- (void)setBannerPullPercentage:(CGFloat)arg1 {
 	//Disable tinybar
-	%log;
-	_pulledDown = YES;
-	%orig;
+	// %log;
+	if (arg1 > 0.45)
+		_pulledDown = YES;
+	%orig(arg1);
 }
 
 %end
