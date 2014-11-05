@@ -62,28 +62,6 @@
 			<key>PostNotification</key>
 			<string>com.alexzielenski.tinybar/prefsChanged</string>
 			<key>cell</key>
-			<string>PSSliderCell</string>
-			<key>default</key>
-			<real>0.2</real>
-			<key>defaults</key>
-			<string>com.alexzielenski.tinybar</string>
-			<key>min</key>
-			<real>0.0</real>
-			<key>max</key>
-			<real>1.0</real>
-			<key>id</key>
-			<string>delay</string>
-			<key>key</key>
-			<string>delay</string>
-			<key>label</key>
-			<string>Animation Delay</string>
-			<key>showValue</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>PostNotification</key>
-			<string>com.alexzielenski.tinybar/prefsChanged</string>
-			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
