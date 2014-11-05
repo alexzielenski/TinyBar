@@ -42,7 +42,7 @@
 	[self setPreferenceValue: @DEFAULT_DURATION_LONG specifier: [self specifierForID: PREFS_DURATION_LONG_KEY]];
 	[self setPreferenceValue: @DEFAULT_STRETCH_BANNER specifier: [self specifierForID: PREFS_STRETCH_BANNER_KEY]];
 	[self setPreferenceValue: @DEFAULT_STICKY specifier: [self specifierForID: PREFS_STICKY_KEY]];
-	[self setPreferenceValue: @DEFAULT_DELAY specifief: [self specifierForID: PREFS_DELAY_KEY]];
+	[self setPreferenceValue: @DEFAULT_DELAY specifier: [self specifierForID: PREFS_DELAY_KEY]];
 	[self setPreferenceValue: DEFAULT_FONT specifier: [self specifierForID: PREFS_FONT_KEY]];
 	[self setPreferenceValue: DEFAULT_FONT specifier: [self specifierForID: PREFS_MESSAGEFONT_KEY]];
 	[self reloadSpecifiers];
