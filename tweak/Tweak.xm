@@ -37,6 +37,8 @@ static BOOL _pulledDown = NO;
 @property (copy, nonatomic) NSString *sectionID;
 @property (copy, nonatomic) id defaultAction;
 @property (copy) NSString *secondaryText;
+@property(retain, nonatomic) id topAlert; // @synthesize topAlert=_topAlert;
+
 + (id)action;
 + (id)sharedInstance;
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
@@ -45,6 +47,7 @@ static BOOL _pulledDown = NO;
 - (BOOL)containsAttachments;
 - (void)setSecondaryText:(id)arg1 italicized:(BOOL)arg2;
 - (int)_ui_resolvedTextAlignment;
+- (void)bannerViewControllerDidRequestDismissal:(id)arg1;
 
 - (UILabel *)tb_titleLabel;
 - (MarqueeLabel *)tb_secondaryLabel;
@@ -63,6 +66,8 @@ static BOOL _pulledDown = NO;
 
 - (BOOL)isPulledDown;
 - (BOOL)showsKeyboard;
+- (void)_dismissOverdueOrDequeueIfPossible;
+- (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 @end
 
 static void reloadPreferences() {
@@ -89,6 +94,22 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	if (!value)
 		return NO;
 	return value.boolValue;
+}
+
+static void showTestBanner() {
+	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
+	[request setTitle: @"TinyBar"];
+	
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && UIDeviceOrientationIsLandscape([[UIDevice currentDevice] orientation]))) {
+	 	[request setMessage: @"Preferences saved!\nThis is a really really really really really really really really really really really really long test notification to show scrolling."];
+	 } else {
+	 	[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
+	}
+	[request setSectionID: @"com.apple.Preferences"];
+	[request setDefaultAction: [%c(BBAction) action]];
+	
+	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+	[ctrl observer:nil addBulletin:request forFeed:2];
 }
 
 %hook SBDefaultBannerView
@@ -321,7 +342,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 
 %new
 - (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string bounds:(CGRect)bounds {
-	if (fontName && fontName.length && ![fontName isEqualToString: @"Default"]) {
+	if (fontName && fontName.length && ![fontName isEqualToString: DEFAULT_FONT]) {
 		NSMutableAttributedString *mut = [string.mutableCopy autorelease];
 		UIFont *font = [UIFont fontWithName: fontName size: 14.0];
 		[mut addAttribute: NSFontAttributeName value:font range: NSMakeRange(0, mut.length)];
@@ -519,33 +540,32 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 	TLog(@"Preferences changed!");
 	reloadPreferences();
 
-	// Show a test notification
-	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-	[request setTitle: @"TinyBar"];
-	
-	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && UIDeviceOrientationIsLandscape([[UIDevice currentDevice] orientation]))) {
-		[request setMessage: @"Preferences saved!\nThis is a really really really really really really really really really really really really long test notification to show scrolling."];
-	} else {
-		[request setMessage: @"Preferences saved! This is an extra long test notification to show scrolling."];
-	}
-	[request setSectionID: @"com.apple.Preferences"];
-	[request setDefaultAction: [%c(BBAction) action]];
-  
 	id bctrl = [%c(SBBannerController) sharedInstance];
-	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-	
-	if (IS_IOS_8_PLUS()) {
-		[bctrl _cancelBannerDismissTimers];
-	}
 	
 	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object:nil];
 	[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object:nil];
 
     // Hide previous banner
-    [bctrl _replaceIntervalElapsed];
- 	[bctrl _dismissIntervalElapsed];
-
-    [ctrl observer:nil addBulletin:request forFeed:2];
+ 	if (IS_IOS_8_PLUS()) {
+ 		if ([bctrl _bannerContext]) {
+ 			[bctrl _dismissBannerWithAnimation: YES reason: 1 forceEvenIfBusy: YES completion:^() {
+ 				[bctrl _replaceIntervalElapsed];
+ 				[bctrl _dismissIntervalElapsed];
+ 		
+ 				dispatch_async(dispatch_get_main_queue(), ^{
+ 					showTestBanner();
+ 				});
+ 			}];
+		} else {
+			[bctrl _replaceIntervalElapsed];
+			[bctrl _dismissIntervalElapsed];
+			showTestBanner();
+		}
+ 	} else {
+	 	[bctrl _replaceIntervalElapsed];
+	 	[bctrl _dismissIntervalElapsed];
+	 	showTestBanner();
+ 	}
 }
 
 %ctor {
