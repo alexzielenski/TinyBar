@@ -68,6 +68,7 @@ static BOOL _pulledDown = NO;
 - (BOOL)showsKeyboard;
 - (void)_dismissOverdueOrDequeueIfPossible;
 - (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+- (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 @end
 
 static void reloadPreferences() {
@@ -96,7 +97,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	return value.boolValue;
 }
 
-static void showTestBanner() {
+static void showTestBanner() {	
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
 	[request setTitle: @"TinyBar"];
 	
@@ -547,18 +548,23 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 
     // Hide previous banner
  	if (IS_IOS_8_PLUS()) {
- 		if ([bctrl _bannerContext]) {
- 			[bctrl _dismissBannerWithAnimation: YES reason: 1 forceEvenIfBusy: YES completion:^() {
- 				[bctrl _replaceIntervalElapsed];
- 				[bctrl _dismissIntervalElapsed];
- 		
- 				dispatch_async(dispatch_get_main_queue(), ^{
- 					showTestBanner();
- 				});
- 			}];
+ 		if ([bctrl _bannerContext] && ![[bctrl _bannerView] isDismissing]) {
+ 			static BOOL _isDismissing = NO;
+ 			dispatch_async(dispatch_get_main_queue(), ^{
+ 				if (_isDismissing)
+ 					return;
+ 				
+ 				_isDismissing = YES;
+ 				[bctrl _dismissBannerWithAnimation: NO reason: 1 forceEvenIfBusy: NO completion:^() { 				
+ 					dispatch_async(dispatch_get_main_queue(), ^{
+						[bctrl _replaceIntervalElapsed];
+						[bctrl _dismissIntervalElapsed];
+						showTestBanner();
+						_isDismissing = NO;
+ 					});
+ 				}];
+ 			});
 		} else {
-			[bctrl _replaceIntervalElapsed];
-			[bctrl _dismissIntervalElapsed];
 			showTestBanner();
 		}
  	} else {
