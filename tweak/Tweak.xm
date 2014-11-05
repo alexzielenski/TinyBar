@@ -7,7 +7,7 @@
 #define PADDING   4.0
 #define IMAGESIZE 14.0
 
-#define SBHEIGHT round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: PREFS_HEIGHT_KEY] doubleValue] : DEFAULT_HEIGHT)
+#define SBHEIGHT (CGFloat)(round([preferences objectForKey: PREFS_HEIGHT_KEY] ? [[preferences objectForKey: PREFS_HEIGHT_KEY] doubleValue] : DEFAULT_HEIGHT))
 #define DURATION  [preferences objectForKey: PREFS_DURATION_KEY] ? [[preferences objectForKey: PREFS_DURATION_KEY] doubleValue] : DEFAULT_DURATION
 #define SCROLL_SPEED (CGFloat)([preferences objectForKey: PREFS_SPEED_KEY] ? [[preferences objectForKey: PREFS_SPEED_KEY] doubleValue] : DEFAULT_SPEED)
 #define ENABLED ([preferences objectForKey: PREFS_ENABLED_KEY] ? [[preferences objectForKey: PREFS_ENABLED_KEY] boolValue] : DEFAULT_ENABLED)
@@ -36,6 +36,7 @@ static BOOL _pulledDown = NO;
 @property (copy, nonatomic) NSString *title;
 @property (copy, nonatomic) NSString *sectionID;
 @property (copy, nonatomic) id defaultAction;
+@property (copy) NSString *secondaryText;
 + (id)action;
 + (id)sharedInstance;
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
@@ -152,21 +153,16 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 
 %hook SBBannerController
 
-- (void)_presentBannerForContext:(id)arg1 reason:(long long)arg2 {
-	%log;
-	%orig(arg1, arg2);
-}
-
-- (CGRect)_bannerFrameForOrientation:(int)arg1 {
+- (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
 	_pulledDown = NO;
 	
 	id bulletin = [self valueForKeyPath: @"_bannerView.bannerContext.item.seedBulletin"];
 	if (isApplicationBlacklisted([bulletin sectionID])) {
-		TLog(@"blacklisted");
+		// TLog(@"blacklisted");
 		_pulledDown = YES;
 	}
 	
-	CGRect o = %orig;
+	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
 
@@ -178,18 +174,18 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	return o;
 }
 
-- (void)_setupBannerDismissTimers {
-	%log;
-	%orig;
-}
-
-- (void)_cancelBannerDismissTimers {
-	%log;
-	%orig;
-}
+// - (void)_setupBannerDismissTimers {
+//     %log;
+//     %orig;
+// }
+// 
+// - (void)_cancelBannerDismissTimers {
+//     %log;
+//     %orig;
+// }
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
-	%log;
+	// %log;
 	   
     NSString *sel = NSStringFromSelector(aSelector);
     if (ENABLED && !_pulledDown) {
@@ -204,23 +200,23 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
     }
 	%orig(aSelector, anArgument, delay, modes);
 }
-
-- (void)_replaceIntervalElapsed {
-    %log;
-    %orig;
-}
-
-- (void)_dismissIntervalElapsed {
-    %log;
-    %orig;
-}
+// 
+// - (void)_replaceIntervalElapsed {
+//     %log;
+//     %orig;
+// }
+// 
+// - (void)_dismissIntervalElapsed {
+//     %log;
+//     %orig;
+// }
 
 %end
 
 %hook SBBannerContainerViewController
 
-- (CGRect)_bannerFrameForOrientation:(long long)arg1 {
-%log;
+- (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
+	// %log;
 	_pulledDown = NO;
 	
 	id bulletin = [self valueForKeyPath: @"_bannerContext.item.seedBulletin"];
@@ -229,7 +225,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 		_pulledDown = YES;
 	}
 
-	CGRect o = %orig;
+	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
 	
@@ -257,7 +253,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	if (ENABLED && !_pulledDown)
 		%orig(UIEdgeInsetsZero);
 	else
-		%orig;
+		%orig(arg1);
 }
 
 - (CGRect)_contentFrame {
@@ -289,11 +285,11 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
     return bounds;
 }
 
-- (double)_grabberAlpha {
+- (CGFloat)_grabberAlpha {
 	return ENABLED && !_pulledDown ? 0.0 : %orig;
 }
 
-- (double)minimumHeight {
+- (CGFloat)minimumHeight {
 	return ENABLED && !_pulledDown ? SBHEIGHT : %orig;
 }
 
@@ -334,7 +330,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 }
 
 - (void)layoutSubviews {
-	%log;
+	// %log;
 	%orig;
 	
 	// Remove date label on iOS7.1+
