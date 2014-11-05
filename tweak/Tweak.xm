@@ -58,6 +58,9 @@ static BOOL _pulledDown = NO;
 
 - (BOOL)_isItalicizedAttributedString:(NSAttributedString *)arg1;
 - (NSAttributedString *)_newAttributedStringForSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2;
+
+- (BOOL)isPulledDown;
+- (BOOL)showsKeyboard;
 @end
 
 static void reloadPreferences() {
@@ -221,7 +224,7 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	_pulledDown = NO;
 	
 	id bulletin = [self valueForKeyPath: @"_bannerContext.item.seedBulletin"];
-	if (isApplicationBlacklisted([bulletin sectionID])) {
+	if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown] || [self showsKeyboard]) {
 		TLog(@"blacklisted");
 		_pulledDown = YES;
 	}
