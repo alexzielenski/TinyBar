@@ -463,8 +463,9 @@ static void showTestBanner() {
 	}
 
 	// make the secondary text fille the rest of the view and vertically center it
-	secondaryRect.origin.x   += primaryRect.size.width + PADDING;
-	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width;
+	if (!rtl)
+		secondaryRect.origin.x   += primaryRect.size.width + PADDING;
+	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width - PADDING;
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
 	
