@@ -124,19 +124,29 @@ static void showTestBanner() {
 	UIView *textView = MSHookIvar<UIView *>(self, "_textView");
 	UIView *imageView = MSHookIvar<UIView *>(self, "_iconImageView");
 	UIView *grabberView = nil;
+	UIView *secondaryContentView = nil;
 
 	// The grabber view was removed in iOS 8
 	Ivar grabberVar = class_getInstanceVariable([self class], "_grabberView");
 	if (grabberVar != NULL) {
 		grabberView = object_getIvar(self, grabberVar);
 	}
+	
+	Ivar secondaryContentVar = class_getInstanceVariable([self class], "_secondaryContentView");
+	if (secondaryContentVar != NULL) {
+		secondaryContentView = object_getIvar(self, secondaryContentVar);
+	}
+	
 
 	if (!ENABLED || _pulledDown) {
+		secondaryContentView.alpha = 1.0;
 		attachment.alpha = 1.0;
 		imageView.alpha = 1.0;
 		grabberView.alpha = 1.0;
 		return;
 	}
+	
+	secondaryContentView.alpha = 0.0;
 
 	// Hide the grabber
 	grabberView.alpha = 0.0;
@@ -345,7 +355,7 @@ static void showTestBanner() {
 
 %new
 - (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string bounds:(CGRect)bounds {
-	if (fontName && fontName.length && ![fontName isEqualToString: DEFAULT_FONT]) {
+	if (fontName && fontName.length && ![fontName isEqualToString: DEFAULT_FONT] && string) {
 		NSMutableAttributedString *mut = [string.mutableCopy autorelease];
 		UIFont *font = [UIFont fontWithName: fontName size: 14.0];
 		[mut addAttribute: NSFontAttributeName value:font range: NSMakeRange(0, mut.length)];
@@ -406,13 +416,24 @@ static void showTestBanner() {
 	NSAttributedString *secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
 	NSAttributedString *secondaryString = nil;
 	NSString *secondaryText = [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
-	if (IS_IOS_8_PLUS()) {
+	
+	if ((!secondaryText || secondaryText.length == 0) && IS_IOS_8_PLUS()) {
+		secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_alternateSecondaryTextAttributedString");
+		secondaryText = [secondaryAtr.string ?: @"" stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
+	}
+	
+	if (IS_IOS_8_PLUS() && secondaryText) {
 		secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
 														 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
-	} else {
+	} else if (secondaryText) {
 		secondaryString = [[[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]] autorelease];
 	}
-
+	
+	if (!primaryString)
+		primaryString = [[NSAttributedString alloc] initWithString:@"" attributes: @{}];
+	if (!secondaryString)
+		secondaryString = [[NSAttributedString alloc] initWithString:@"" attributes: @{}];
+	
 	// Format Fonts
 	primaryString = [self tb_addFont: FONT toString: primaryString bounds: bounds];
 	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString bounds: bounds];
@@ -473,7 +494,6 @@ static void showTestBanner() {
 	if (secondary.animationDuration == 0) {
 		secondary.fadeLength = 0.0;
 	}
-	
 	
 	//	Make the banner persist at least as long as the user says or enough for one scroll around
 	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
