@@ -438,6 +438,9 @@ static void showTestBanner() {
 	primaryString = [self tb_addFont: FONT toString: primaryString bounds: bounds];
 	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString bounds: bounds];
 
+	UIFont *primaryFont = [primaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL];
+	UIFont *secondaryFont = [secondaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL];
+
 	NSString *strRep = secondaryString.string;
 	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
 	NSLocaleLanguageDirection direction = (NSLocaleLanguageDirection)[%c(NSLocale) characterDirectionForLanguage:isoLangCode];
@@ -462,9 +465,9 @@ static void showTestBanner() {
 	// Center primary text
 	// baseline = primaryBase + primary.font.ascender
 	// secondaryBase = baseline - secondary.font.ascender
-	CGFloat primaryBase = bounds.size.height / 2 - primaryRect.size.height / 2;
+	CGFloat primaryBase = bounds.size.height / 2 - primaryFont.lineHeight / 2;
 	// Align the secondary text baseline to the primary
-	CGFloat secondaryBase = primaryBase + (primary.font.ascender - secondary.font.ascender);
+	CGFloat secondaryBase = primaryBase + (primaryFont.ascender - secondaryFont.ascender);
 
 	primaryRect.origin.y = primaryBase;
 	secondaryRect.origin.y = secondaryBase;
