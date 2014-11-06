@@ -466,8 +466,8 @@ static void showTestBanner() {
 	// Align the secondary text baseline to the primary
 	CGFloat secondaryBase = primaryBase + (primary.font.ascender - secondary.font.ascender);
 
-	primaryRect.origin.y = ceil(primaryBase);
-	secondaryRect.origin.y = ceil(secondaryBase);
+	primaryRect.origin.y = primaryBase;
+	secondaryRect.origin.y = secondaryBase;
 
 	// Move the title to the right side of we are reading right-to-left
 	if (rtl) {
