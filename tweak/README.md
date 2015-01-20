@@ -1,4 +1,4 @@
-TinyBar
+BannerStatus
 =======
 
-iOS Tweak that thins notification banners down to size!
+iOS Tweak that allows total customization of the native iOS banner notifications!

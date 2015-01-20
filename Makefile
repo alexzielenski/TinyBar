@@ -1,16 +1,13 @@
-export THEOS_DEVICE_IP=127.0.0.1
-export THEOS_DEVICE_PORT=2222
 export GO_EASY_ON_ME = 1
 export ARCHS = armv7 arm64
-export DEBUG = 1
 TARGET := iphone:7.0:7.0
 
-include theos/makefiles/common.mk
-
-THEOS_BUILD_DIR = build
+THEOS_BUILD_DIR = builds
 
 SUBPROJECTS = preferences
 SUBPROJECTS += tweak
+
+include theos/makefiles/common.mk
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 after-stage::

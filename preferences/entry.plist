@@ -1,10 +1,10 @@
 {
-    entry =     {
-        bundle = TinyBar;
-        cell = PSLinkCell;
-        detail = TinyBarListController;
-        icon = "Icon.png";
-        isController = 1;
-        label = TinyBar;
-    };
+	entry = {
+		bundle = BannerStatus;
+		cell = PSLinkCell;
+		detail = "BannerStatusListController";
+		icon = "Icon.png";
+		isController = 1;
+		label = BannerStatus;
+	};
 }

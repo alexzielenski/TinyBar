@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>entry</key>
+	<dict>
+		<key>label</key>
+		<string>Animations</string>
+		<key>cell</key>
+		<string>PSLinkCell</string>
+	</dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Michael Poole</string>
+			<key>footerCell</key>
+			<string>BannerStatus © 2014</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>visitWebsite:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Visit My Website</string>
+			<key>website</key>
+			<string>http://www.iExiled.com</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>visitTwitter:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Twitter @MichaelSP1991</string>
+			<key>userName</key>
+			<string>michaelsp1991</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Alex Zielenski</string>
+			<key>footerCell</key>
+			<string>TinyBar © 2014</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>visitWebsite:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Visit My Website</string>
+			<key>website</key>
+			<string>http://www.alexzielenski.com</string>
+		</dict>
+		<dict>
+			<key>action</key>
+			<string>visitTwitter:</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Twitter @ alexzielenski</string>
+			<key>userName</key>
+			<string>alexzielenski</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Credits</string>
+</dict>
+</plist>
