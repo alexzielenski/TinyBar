@@ -71,6 +71,7 @@ static BOOL _pulledDown = NO;
 - (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 - (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 - (id)_bannerContext;
+- (id)_bannerItem;
 @end
 
 static void reloadPreferences() {
@@ -93,6 +94,10 @@ static void reloadPreferences() {
 }
 
 static BOOL isApplicationBlacklisted(NSString *sectionID) {
+	if (!sectionID) {
+		return YES;
+	}
+	
 	NSNumber *value = [preferences objectForKey: [@"blacklist_" stringByAppendingString: sectionID]];
 	if (!value)
 		return NO;
@@ -190,14 +195,27 @@ static void showTestBanner() {
 
 - (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
 	_pulledDown = NO;
+	CGRect o = %orig(arg1);
 	
-	id bulletin = [self valueForKeyPath: @"_bannerView.bannerContext.item.seedBulletin"];
+	id bView = [self valueForKeyPath: @"_bannerView"];
+	if (!bView) {
+		return o;
+	}
+	
+	id context = [bView valueForKeyPath: @"bannerContext"];
+	if (!context) {
+		return o;
+	}
+	id bulletin = [context valueForKeyPath: @"item.seedBulletin"];
+	if (!bulletin) {
+		return o;
+	}
+	
 	if (isApplicationBlacklisted([bulletin sectionID])) {
-		// TLog(@"blacklisted");
+		TLog(@"blacklisted");
 		_pulledDown = YES;
 	}
 	
-	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
 
@@ -250,17 +268,28 @@ static void showTestBanner() {
 
 %hook SBBannerContainerViewController
 
+- (id)valueForUndefinedKey:(NSString *)key {
+	return nil;
+}
+
 - (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
-	// %log;
-	_pulledDown = NO;
+	// %log;f
 	
-	id bulletin = [self valueForKeyPath: @"_bannerContext.item.seedBulletin"];
-	if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown]) {
-		TLog(@"blacklisted");
-		_pulledDown = YES;
+	_pulledDown = NO;
+	CGRect o = %orig(arg1);
+
+	id item = [self _bannerItem];
+	if (item) {
+		id bulletin = [item valueForKeyPath: @"seedBulletin"];
+		NSLog(@"%@", [bulletin sectionID]);
+		if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown]) {
+			TLog(@"blacklisted");
+			_pulledDown = YES;
+		}
+	} else {
+		return o;
 	}
 
-	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
 	
@@ -356,7 +385,7 @@ static void showTestBanner() {
 %new
 - (NSAttributedString *)tb_addFont:(NSString *)fontName toString:(NSAttributedString *)string bounds:(CGRect)bounds {
 	if (fontName && fontName.length && ![fontName isEqualToString: DEFAULT_FONT] && string) {
-		NSMutableAttributedString *mut = [string.mutableCopy autorelease];
+		NSMutableAttributedString *mut = [string.mutableCopy autorelease] ?: [[NSMutableAttributedString alloc] initWithString:@" "];
 		UIFont *font = [UIFont fontWithName: fontName size: 14.0];
 		[mut addAttribute: NSFontAttributeName value:font range: NSMakeRange(0, mut.length)];
 		
@@ -422,24 +451,29 @@ static void showTestBanner() {
 		secondaryText = [secondaryAtr.string ?: @"" stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
 	}
 	
-	if (IS_IOS_8_PLUS() && secondaryText) {
-		secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
-														 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
-	} else if (secondaryText) {
-		secondaryString = [[[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]] autorelease];
+	if (secondaryAtr) {
+		if (IS_IOS_8_PLUS() && secondaryText) {
+			secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
+															 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
+		} else if (secondaryText) {
+			secondaryString = [[[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]] autorelease];
+		}
+	} else {
+		secondaryString = [[[NSAttributedString alloc] initWithString:@""] autorelease];
 	}
 	
 	if (!primaryString)
-		primaryString = [[NSAttributedString alloc] initWithString:@"" attributes: @{}];
+		primaryString = [[[NSAttributedString alloc] initWithString:@" "] autorelease];
 	if (!secondaryString)
-		secondaryString = [[NSAttributedString alloc] initWithString:@"" attributes: @{}];
+		secondaryString = [[[NSAttributedString alloc] initWithString:@" "] autorelease];
 	
 	// Format Fonts
 	primaryString = [self tb_addFont: FONT toString: primaryString bounds: bounds];
 	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString bounds: bounds];
 
-	UIFont *primaryFont = [primaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL];
-	UIFont *secondaryFont = [secondaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL];
+
+	UIFont *primaryFont = primaryString && primaryString.length > 0 ? [primaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL] : [UIFont systemFontOfSize: [UIFont smallSystemFontSize]];
+	UIFont *secondaryFont = secondaryString && secondaryString.length > 0 ? [secondaryString attribute: NSFontAttributeName atIndex: 0 effectiveRange: NULL] : [UIFont systemFontOfSize: [UIFont smallSystemFontSize]];
 
 	NSString *strRep = secondaryString.string;
 	NSString *isoLangCode = [(NSString *)CFStringTokenizerCopyBestStringLanguage((CFStringRef)strRep, CFRangeMake(0, strRep.length)) autorelease];
