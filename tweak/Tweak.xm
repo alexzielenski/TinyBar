@@ -199,15 +199,18 @@ static void showTestBanner() {
 	
 	id bView = [self valueForKeyPath: @"_bannerView"];
 	if (!bView) {
+		_pulledDown = YES;
 		return o;
 	}
 	
 	id context = [bView valueForKeyPath: @"bannerContext"];
 	if (!context) {
+		_pulledDown = YES;
 		return o;
 	}
 	id bulletin = [context valueForKeyPath: @"item.seedBulletin"];
 	if (!bulletin) {
+		_pulledDown = YES;
 		return o;
 	}
 	
@@ -219,8 +222,10 @@ static void showTestBanner() {
 	if (!ENABLED || _pulledDown)
 		return o;
 
-	if (o.size.width == 0 || o.size.height == 0)
+	if (o.size.width == 0 || o.size.height == 0) {
+		_pulledDown = YES;
 		return o;
+	}
 
 	// Make the banner window the height of the statusbar
 	o.size.height = SBHEIGHT;
@@ -276,20 +281,19 @@ static void showTestBanner() {
 	// %log;f
 	
 	_pulledDown = NO;
-	CGRect o = %orig(arg1);
 
 	id item = [self _bannerItem];
 	if (item) {
 		id bulletin = [item valueForKeyPath: @"seedBulletin"];
-		NSLog(@"%@", [bulletin sectionID]);
 		if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown]) {
 			TLog(@"blacklisted");
 			_pulledDown = YES;
 		}
 	} else {
-		return o;
+		_pulledDown = YES;
 	}
 
+	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
 	
