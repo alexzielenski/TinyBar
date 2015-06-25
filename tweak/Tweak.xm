@@ -42,7 +42,10 @@ static BOOL _pulledDown = NO;
 
 + (id)action;
 + (id)sharedInstance;
+
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
+- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(unsigned long long)arg3 playLightsAndSirens:(_Bool)arg4 withReply:(id)arg5;
+
 - (void)_replaceIntervalElapsed;
 - (void)_dismissIntervalElapsed;
 - (BOOL)containsAttachments;
@@ -72,6 +75,7 @@ static BOOL _pulledDown = NO;
 - (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 - (id)_bannerContext;
 - (id)_bannerItem;
+- (id)seedBulletin;
 @end
 
 static void reloadPreferences() {
@@ -79,7 +83,7 @@ static void reloadPreferences() {
 		[preferences release];
 		preferences = nil;
 	}
-	
+
 	if (IS_IOS_8_PLUS()) {
 		// Use CFPreferences since sometimes the prefs dont synchronize to the disk immediately
 		NSArray *keyList = [(NSArray *)CFPreferencesCopyKeyList((CFStringRef)APPID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) autorelease];
@@ -97,17 +101,17 @@ static BOOL isApplicationBlacklisted(NSString *sectionID) {
 	if (!sectionID) {
 		return YES;
 	}
-	
+
 	NSNumber *value = [preferences objectForKey: [@"blacklist_" stringByAppendingString: sectionID]];
 	if (!value)
 		return NO;
 	return value.boolValue;
 }
 
-static void showTestBanner() {	
+static void showTestBanner() {
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
 	[request setTitle: @"TinyBar"];
-	
+
 	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone && UIDeviceOrientationIsLandscape([[UIDevice currentDevice] orientation]))) {
 	 	[request setMessage: @"Preferences saved!\nThis is a really really really really really really really really really really really really long test notification to show scrolling."];
 	 } else {
@@ -115,16 +119,20 @@ static void showTestBanner() {
 	}
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
-	
+
 	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-	[ctrl observer:nil addBulletin:request forFeed:2];
+	if ([ctrl respondsToSelector:@selector(observer:addBulletin:forFeed:)]) {
+		[ctrl observer:nil addBulletin:request forFeed:2];
+	} else if ([ctrl respondsToSelector:@selector(observer:addBulletin:forFeed:playLightsAndSirens:withReply:)]) {
+		[ctrl observer:nil addBulletin:request forFeed:2 playLightsAndSirens:YES withReply:nil];
+	}
 }
 
 %hook SBDefaultBannerView
 
 - (void)layoutSubviews {
 	%orig;
-	
+
 	UIImageView *attachment = MSHookIvar<UIImageView *>(self, "_attachmentImageView");
 	UIView *textView = MSHookIvar<UIView *>(self, "_textView");
 	UIView *imageView = MSHookIvar<UIView *>(self, "_iconImageView");
@@ -136,12 +144,12 @@ static void showTestBanner() {
 	if (grabberVar != NULL) {
 		grabberView = object_getIvar(self, grabberVar);
 	}
-	
+
 	Ivar secondaryContentVar = class_getInstanceVariable([self class], "_secondaryContentView");
 	if (secondaryContentVar != NULL) {
 		secondaryContentView = object_getIvar(self, secondaryContentVar);
 	}
-	
+
 
 	if (!ENABLED || _pulledDown) {
 		secondaryContentView.alpha = 1.0;
@@ -150,12 +158,12 @@ static void showTestBanner() {
 		grabberView.alpha = 1.0;
 		return;
 	}
-	
+
 	secondaryContentView.alpha = 0.0;
 
 	// Hide the grabber
 	grabberView.alpha = 0.0;
-	
+
 	// Get rid of the attachment
 	attachment.alpha = 0.0;
 
@@ -163,7 +171,7 @@ static void showTestBanner() {
 
 	// Make the image our size and vertically center it
 	CGRect imageFrame = CGRectZero;
-	
+
 	if (SHOWICON) {
 		imageFrame.origin.y = floor(bounds.size.height / 2 - IMAGESIZE / 2);
 		imageFrame.origin.x = 0;
@@ -180,10 +188,10 @@ static void showTestBanner() {
 	CGRect textFrame = textView.frame;
 	textFrame.size.height = bounds.size.height;
 	textFrame.origin.x = imageFrame.origin.x + imageFrame.size.width;
-	
+
 	if (SHOWICON)
 		textFrame.origin.x += PADDING;
-		
+
 	textFrame.origin.y = 0;
 	textFrame.size.width = bounds.size.width - textFrame.origin.x;
 	[textView setFrame: textFrame];
@@ -196,13 +204,13 @@ static void showTestBanner() {
 - (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
 	_pulledDown = NO;
 	CGRect o = %orig(arg1);
-	
+
 	id bView = [self valueForKeyPath: @"_bannerView"];
 	if (!bView) {
 		_pulledDown = YES;
 		return o;
 	}
-	
+
 	id context = [bView valueForKeyPath: @"bannerContext"];
 	if (!context) {
 		_pulledDown = YES;
@@ -213,12 +221,12 @@ static void showTestBanner() {
 		_pulledDown = YES;
 		return o;
 	}
-	
+
 	if (isApplicationBlacklisted([bulletin sectionID])) {
 		TLog(@"blacklisted");
 		_pulledDown = YES;
 	}
-	
+
 	if (!ENABLED || _pulledDown)
 		return o;
 
@@ -236,7 +244,7 @@ static void showTestBanner() {
 //     %log;
 //     %orig;
 // }
-// 
+//
 // - (void)_cancelBannerDismissTimers {
 //     %log;
 //     %orig;
@@ -244,7 +252,7 @@ static void showTestBanner() {
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes {
 	// %log;
-	   
+
     NSString *sel = NSStringFromSelector(aSelector);
     if (ENABLED && !_pulledDown) {
 		if ([sel isEqualToString: @"_replaceIntervalElapsed"]) {
@@ -254,16 +262,16 @@ static void showTestBanner() {
 				return;
 			delay = _dismissInterval;
 		}
-		
+
     }
 	%orig(aSelector, anArgument, delay, modes);
 }
-// 
+//
 // - (void)_replaceIntervalElapsed {
 //     %log;
 //     %orig;
 // }
-// 
+//
 // - (void)_dismissIntervalElapsed {
 //     %log;
 //     %orig;
@@ -279,12 +287,12 @@ static void showTestBanner() {
 
 - (CGRect)_bannerFrameForOrientation:(NSInteger)arg1 {
 	// %log;f
-	
+
 	_pulledDown = NO;
 
 	id item = [self _bannerItem];
-	if (item) {
-		id bulletin = [item valueForKeyPath: @"seedBulletin"];
+	if (item && [item respondsToSelector: @selector(seedBulletin)]) {
+		id bulletin = [item seedBulletin];
 		if (isApplicationBlacklisted([bulletin sectionID]) || [self isPulledDown]) {
 			TLog(@"blacklisted");
 			_pulledDown = YES;
@@ -296,10 +304,10 @@ static void showTestBanner() {
 	CGRect o = %orig(arg1);
 	if (!ENABLED || _pulledDown)
 		return o;
-	
+
 	if (o.size.width == 0 || o.size.height == 0)
 		return o;
-	
+
 	// Make the banner window the height of the statusbar
 	o.size.height = SBHEIGHT;
 	return o;
@@ -342,14 +350,14 @@ static void showTestBanner() {
     CGRect o = %orig;
     if (!ENABLED || !STRETCH_BANNER || _pulledDown)
         return o;
-    
+
     if (o.size.width == 0 || o.size.height == 0)
         return o;
-    
+
     CGRect bounds = [(UIView *)self bounds];
     bounds.origin.x += PADDING;
     bounds.size.width -= PADDING * 2;
-    
+
     return bounds;
 }
 
@@ -375,7 +383,7 @@ static void showTestBanner() {
 
 	// Create and cache the secondary text label
 	MarqueeLabel *secondary = [self tb_secondaryLabel];
-	
+
 	if (!secondary) {
 		secondary = [[[MarqueeLabel alloc] initWithFrame: CGRectMake(0, 0, 1024, ((UIView *)self).bounds.size.height) rate:SCROLL_SPEED andFadeLength:PADDING] autorelease];
 		[secondary setContinuousMarqueeExtraBuffer: 14.0];
@@ -392,32 +400,32 @@ static void showTestBanner() {
 		NSMutableAttributedString *mut = [string.mutableCopy autorelease] ?: [[NSMutableAttributedString alloc] initWithString:@" "];
 		UIFont *font = [UIFont fontWithName: fontName size: 14.0];
 		[mut addAttribute: NSFontAttributeName value:font range: NSMakeRange(0, mut.length)];
-		
+
 		UIFont *newFont = [self scaledFont: font fromSize: mut.size toRect: bounds];
 		[mut addAttribute: NSFontAttributeName value:newFont range: NSMakeRange(0, mut.length)];
 		return mut;
 	}
-	
+
 	return string;
 }
 
 %new
 - (UIFont *)scaledFont:(UIFont *)font fromSize:(CGSize)size toRect:(CGRect)bounds {
 	CGFloat factor = (bounds.size.height - PADDING) / size.height;
-	
+
 	return [font fontWithSize: font.pointSize * factor];
 }
 
 - (void)layoutSubviews {
 	// %log;
 	%orig;
-	
+
 	// Remove date label on iOS7.1+
 	Ivar labelVar = class_getInstanceVariable([self class], "_relevanceDateLabel");
 	if (labelVar != NULL) {
 		UILabel *dateLabel = object_getIvar(self, labelVar);
 		if (dateLabel && [dateLabel isKindOfClass: %c(UILabel)]) {
-			
+
 			if (!ENABLED || _pulledDown)
 				[dateLabel setAlpha: 1.0];
 			else
@@ -432,10 +440,10 @@ static void showTestBanner() {
 	// Create and cache a primary text label
 	[self tb_createLabelsIfNecessary];
 	UILabel *primary = [self tb_titleLabel];
-	
+
 	// Create and cache the secondary text label
 	MarqueeLabel *secondary = [self tb_secondaryLabel];
-	
+
 	secondary.rate = SCROLL_SPEED;
 	secondary.animationDelay = DELAY;
 	if (!ENABLED || _pulledDown) {
@@ -449,12 +457,12 @@ static void showTestBanner() {
 	NSAttributedString *secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_secondaryTextAttributedString");
 	NSAttributedString *secondaryString = nil;
 	NSString *secondaryText = [[self secondaryText] stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
-	
+
 	if ((!secondaryText || secondaryText.length == 0) && IS_IOS_8_PLUS()) {
 		secondaryAtr = MSHookIvar<NSAttributedString *>(self, "_alternateSecondaryTextAttributedString");
 		secondaryText = [secondaryAtr.string ?: @"" stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
 	}
-	
+
 	if (secondaryAtr) {
 		if (IS_IOS_8_PLUS() && secondaryText) {
 			secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
@@ -465,12 +473,12 @@ static void showTestBanner() {
 	} else {
 		secondaryString = [[[NSAttributedString alloc] initWithString:@""] autorelease];
 	}
-	
+
 	if (!primaryString)
 		primaryString = [[[NSAttributedString alloc] initWithString:@" "] autorelease];
 	if (!secondaryString)
 		secondaryString = [[[NSAttributedString alloc] initWithString:@" "] autorelease];
-	
+
 	// Format Fonts
 	primaryString = [self tb_addFont: FONT toString: primaryString bounds: bounds];
 	secondaryString = [self tb_addFont: MESSAGEFONT toString: secondaryString bounds: bounds];
@@ -484,11 +492,11 @@ static void showTestBanner() {
 	NSLocaleLanguageDirection direction = (NSLocaleLanguageDirection)[%c(NSLocale) characterDirectionForLanguage:isoLangCode];
 
 	BOOL rtl = (direction == NSLocaleLanguageDirectionRightToLeft);
-	
+
 	[primary setAttributedText: primaryString];
 	[secondary setTextAlignment: (rtl) ? NSTextAlignmentRight : NSTextAlignmentLeft];
 	[secondary setAttributedText: secondaryString];
-	
+
 	if (rtl) {
 		[secondary setMarqueeType: MLContinuousReverse];
 	} else {
@@ -530,25 +538,25 @@ static void showTestBanner() {
 	secondaryRect.size.width  = bounds.size.width - primaryRect.size.width - PADDING;
 	[secondary setFrame: secondaryRect];
 	[self addSubview: secondary];
-	
+
 	secondary.fadeLength = PADDING;
 	if (secondary.animationDuration == 0) {
 		secondary.fadeLength = 0.0;
 	}
-	
+
 	//	Make the banner persist at least as long as the user says or enough for one scroll around
 	CGFloat animationDuration = secondary.animationDuration * 2 + secondary.animationDelay;
 	CGFloat dismissDuration = secondary.animationDuration > 0.0 ? DURATION_LONG : DURATION;
 	CGFloat replaceDuration = (dismissDuration / DEFAULT_DURATION) * 2.375;
-	
+
 	if (animationDuration > replaceDuration && SCROLLTOEND && animationDuration > secondary.animationDelay) {
 		replaceDuration = animationDuration;
-		
+
 		if (animationDuration > DURATION_LONG) {
 			dismissDuration = animationDuration;
 		}
 	}
-		
+
 	_dismissInterval = dismissDuration;
 	_replaceInterval = replaceDuration;
 
@@ -558,7 +566,7 @@ static void showTestBanner() {
 		id bctrl = [%c(SBBannerController) sharedInstance];
 		[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_replaceIntervalElapsed) object: nil];
 		[NSObject cancelPreviousPerformRequestsWithTarget:bctrl selector:@selector(_dismissIntervalElapsed) object: nil];
-		
+
 		[bctrl performSelector: @selector(_replaceIntervalElapsed) withObject: nil afterDelay: _replaceInterval];
 		[bctrl performSelector: @selector(_dismissIntervalElapsed) withObject: nil afterDelay: _dismissInterval];
 	}
@@ -619,8 +627,8 @@ static inline void prefsChanged(CFNotificationCenterRef center,
     // Hide previous banner
  	if (IS_IOS_8_PLUS()) {
  		if (![bctrl _bannerContext]) {
- 			[bctrl _replaceIntervalElapsed];	
- 			[bctrl _dismissIntervalElapsed];	
+ 			[bctrl _replaceIntervalElapsed];
+ 			[bctrl _dismissIntervalElapsed];
 	 		showTestBanner();
  		} else {
  			[bctrl _replaceIntervalElapsed];
@@ -628,7 +636,7 @@ static inline void prefsChanged(CFNotificationCenterRef center,
  			//! This is the hackiest thing i've seen in my life
  			// We need to wait for the bannerContext to go away
  			// before we add another banner. I tried messing with
- 			// completion blocks of the banner controller which 
+ 			// completion blocks of the banner controller which
  			// resulted in crashes after rapidly showing test banners
  			dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
  				// time out after 2 seconds
@@ -639,10 +647,10 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 					[[NSRunLoop currentRunLoop] runUntilDate: [NSDate date]];
 				}
 				dispatch_async(dispatch_get_main_queue(), ^() {
-					[bctrl _replaceIntervalElapsed];	
+					[bctrl _replaceIntervalElapsed];
 					showTestBanner();
 				});
-			});			
+			});
  		}
 
  	} else {
@@ -654,7 +662,7 @@ static inline void prefsChanged(CFNotificationCenterRef center,
 
 %ctor {
 	TLog(@"Initialized");
-	
+
 	reloadPreferences();
 
 	CFNotificationCenterRef center = CFNotificationCenterGetDarwinNotifyCenter();
