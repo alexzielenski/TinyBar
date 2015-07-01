@@ -44,7 +44,7 @@ static BOOL _pulledDown = NO;
 + (id)sharedInstance;
 
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
-- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(unsigned long long)arg3 playLightsAndSirens:(_Bool)arg4 withReply:(id)arg5;
+- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSUInteger)arg3 playLightsAndSirens:(_Bool)arg4 withReply:(id)arg5;
 
 - (void)_replaceIntervalElapsed;
 - (void)_dismissIntervalElapsed;
@@ -71,8 +71,8 @@ static BOOL _pulledDown = NO;
 - (BOOL)isPulledDown;
 - (BOOL)showsKeyboard;
 - (void)_dismissOverdueOrDequeueIfPossible;
-- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
-- (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(long long)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+- (void)_dismissBannerWithAnimation:(_Bool)arg1 reason:(NSInteger)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
+- (void)_tryToDismissWithAnimation:(_Bool)arg1 reason:(NSInteger)arg2 forceEvenIfBusy:(_Bool)arg3 completion:(id)arg4;
 - (id)_bannerContext;
 - (id)_bannerItem;
 - (id)seedBulletin;
