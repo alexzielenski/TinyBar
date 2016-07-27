@@ -348,7 +348,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>TinyBar 0.1.3 © 2014 Alex Zielenski Icon by @andreaslarsendk</string>
+			<string>TinyBar 0.1.5 © 2014 Alex Zielenski Icon by @andreaslarsendk</string>
 			<key>isStaticText</key>
 			<true/>
 		</dict>
