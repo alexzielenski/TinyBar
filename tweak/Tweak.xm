@@ -67,6 +67,7 @@ static BOOL _pulledDown = NO;
 
 - (BOOL)_isItalicizedAttributedString:(NSAttributedString *)arg1;
 - (NSAttributedString *)_newAttributedStringForSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2;
+- (NSAttributedString *)_attributedStringForSecondaryText:(NSString *)arg1 italicized:(BOOL)arg2;
 
 - (BOOL)isPulledDown;
 - (BOOL)showsKeyboard;
@@ -465,8 +466,13 @@ static void showTestBanner() {
 
 	if (secondaryAtr) {
 		if (IS_IOS_8_PLUS() && secondaryText) {
-			secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
-															 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
+			if ([self respondsToSelector:@selector(_attributedStringForSecondaryText:italicized:)]) {
+				secondaryString = [self _attributedStringForSecondaryText: secondaryText
+																 italicized: [self _isItalicizedAttributedString: secondaryAtr]];
+			} else {
+				secondaryString = [[self _newAttributedStringForSecondaryText: secondaryText
+																 italicized: [self _isItalicizedAttributedString: secondaryAtr]] autorelease];
+			}
 		} else if (secondaryText) {
 			secondaryString = [[[NSAttributedString alloc] initWithString: secondaryText attributes: [secondaryAtr attributesAtIndex: 0 effectiveRange: nil]] autorelease];
 		}
